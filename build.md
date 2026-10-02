@@ -423,3 +423,13 @@
   - Browser subagent live smoke testing on deployed Vercel URL.
 - **Assumptions:**
   - User will connect this GitHub repository to Vercel for zero-config Next.js production hosting.
+
+## Turn 30 — Supabase API Keys & Migration Execution Walkthrough
+- **Actions Completed:**
+  - Provided exact step-by-step navigation instructions for locating Supabase Project URL, `anon` public key, and `service_role` private key in the Supabase Dashboard (`Settings -> API`).
+  - Outlined SQL Editor migration steps for executing `20261001000000_p0_init.sql` and `20261003000000_p1_ops.sql`.
+  - Updated `to-do.md` with Supabase environment variables requirement.
+- **What was NOT done:**
+  - Did not execute migrations on remote Supabase instance (requires user project access).
+- **Assumptions:**
+  - User has created or will create a project on https://supabase.com.
