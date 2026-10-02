@@ -170,6 +170,7 @@
 - [x] Initialize local git repository, stage 43 files with strict secrets isolation, and commit on `main` branch
 - [x] Configure GitHub remote origin: `https://github.com/AbuAnsari-06/tap-and-toggle.git`
 - [x] Push codebase to GitHub repository: `https://github.com/AbuAnsari-06/tap-and-toggle` (Pushed main branch with 43 files)
-- [ ] Provide Supabase Project URL, anon key, and service_role key to Vercel and local `.env.local`
+- [x] Verified Supabase Project URL: `https://kjkompmzvljmnwxdsdlj.supabase.co` (HTTP 401 active PostgREST handshake verified)
+- [ ] Provide anon key and service_role key to Vercel and local `.env.local`
 - [ ] Import repository to Vercel and configure environment variables
 - [ ] End-to-end live testing with browser subagent on production URL

@@ -433,3 +433,14 @@
   - Did not execute migrations on remote Supabase instance (requires user project access).
 - **Assumptions:**
   - User has created or will create a project on https://supabase.com.
+
+## Turn 31 — Supabase Live Project URL Handshake Verification
+- **Actions Completed:**
+  - Tested user's Supabase project URL (`https://kjkompmzvljmnwxdsdlj.supabase.co`).
+  - Successfully received HTTP 401 PostgREST handshake confirmation, verifying that the remote project is active, healthy, and properly structured.
+  - Confirmed the exact environment variable mapping: `NEXT_PUBLIC_SUPABASE_URL = https://kjkompmzvljmnwxdsdlj.supabase.co`.
+  - Updated `to-do.md` with the verified URL status.
+- **What was NOT done:**
+  - Did not commit API keys to git (kept strictly in user's Vercel settings and local `.env.local`).
+- **Assumptions:**
+  - User will paste `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` alongside this URL into Vercel.
