@@ -400,3 +400,26 @@
   - Remote deployment to Vercel production and browser agent live testing on public URL (requires user trigger with GitHub/Vercel credentials).
 - **Assumptions:**
   - Local environment is completely verified and production-ready for immediate Vercel deployment.
+
+## Turn 28 — Git Initialization, Clean Commit & Remote Configuration
+- **Actions Completed:**
+  - Verified local git configuration (`user.name = Abu Horairah Ansari`, `user.email = abuansarilucknow@gmail.com`).
+  - Staged all 43 files with strict `.gitignore` isolation preventing any `.env*.local` secrets from staging.
+  - Committed the complete codebase on branch `main` with commit hash `99146ad`: `"feat: complete Tap & Toggle P0 + P1 commercial suite"`.
+  - Added remote origin pointing to `https://github.com/AbuAnsari-06/tap-and-toggle.git`.
+  - Updated `to-do.md` reflecting git setup and awaiting repository creation on GitHub.
+- **What was NOT done:**
+  - Remote push pending user creating the empty repository `tap-and-toggle` at https://github.com/new.
+- **Assumptions:**
+  - User is creating an empty repository named `tap-and-toggle` without initializing README or .gitignore on GitHub.
+
+## Turn 29 — Successful Remote Push to GitHub
+- **Actions Completed:**
+  - Executed `git push -u origin main` — successfully uploaded 43 files, directories, components, migrations, and documentation to `https://github.com/AbuAnsari-06/tap-and-toggle`.
+  - Configured upstream tracking branch (`origin/main`).
+  - Updated `to-do.md` reflecting remote push completion.
+- **What was NOT done:**
+  - Vercel project import and environment variable provisioning (awaiting user trigger in Vercel dashboard).
+  - Browser subagent live smoke testing on deployed Vercel URL.
+- **Assumptions:**
+  - User will connect this GitHub repository to Vercel for zero-config Next.js production hosting.

@@ -167,5 +167,8 @@
 
 ### Step 14: Combined P0 + P1 QA & Vercel Deployment
 - [x] Verify complete build (`next build`) across customer and admin routes (10/10 routes passing with 0 errors)
-- [ ] Deploy unified repository to Vercel with all environment variables
+- [x] Initialize local git repository, stage 43 files with strict secrets isolation, and commit on `main` branch
+- [x] Configure GitHub remote origin: `https://github.com/AbuAnsari-06/tap-and-toggle.git`
+- [x] Push codebase to GitHub repository: `https://github.com/AbuAnsari-06/tap-and-toggle` (Pushed main branch with 43 files)
+- [ ] Import repository to Vercel and configure environment variables
 - [ ] End-to-end live testing with browser subagent on production URL
