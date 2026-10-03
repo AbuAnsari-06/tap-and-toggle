@@ -110,58 +110,51 @@ export async function submitLeadAction(
 
     // 5. Step 1: Upsert Customer by Unique Phone Number (Dedupe Key)
     let customerId: string | null = null;
-    const { data: customer, error: customerError } = await (supabase
+    
+    // Check if customer already exists by phone
+    const { data: existingCustomer, error: findError } = await (supabase
       .from("customer") as any)
-      .upsert(
-        {
+      .select("id")
+      .eq("phone", phone)
+      .maybeSingle();
+
+    if (existingCustomer?.id) {
+      customerId = existingCustomer.id;
+      // Update customer details
+      await (supabase.from("customer") as any)
+        .update({
+          name,
+          flat_no: flatNo || null,
+          society_id: finalSocietyId,
+          whatsapp_opt_in: true,
+        })
+        .eq("id", customerId);
+    } else {
+      const generatedCustomerId = crypto.randomUUID();
+      const { data: newCustomer, error: insertError } = await (supabase
+        .from("customer") as any)
+        .insert({
+          id: generatedCustomerId,
           phone,
           name,
           flat_no: flatNo || null,
           society_id: finalSocietyId,
           whatsapp_opt_in: true,
-        },
-        { onConflict: "phone" }
-      )
-      .select("id")
-      .maybeSingle();
-
-    if (customer && (customer as any).id) {
-      customerId = (customer as any).id;
-    } else {
-      console.warn("Customer upsert warning:", customerError?.message || "No data returned, checking existing record");
-      
-      // Fallback: check if customer already exists by phone
-      const { data: existingCustomer } = await (supabase
-        .from("customer") as any)
+        })
         .select("id")
-        .eq("phone", phone)
         .maybeSingle();
 
-      if (existingCustomer && (existingCustomer as any).id) {
-        customerId = (existingCustomer as any).id;
+      if (newCustomer?.id) {
+        customerId = newCustomer.id;
+      } else if (!insertError) {
+        // Insertion succeeded even if RLS blocked returning data
+        customerId = generatedCustomerId;
       } else {
-        // Fallback: try plain insert
-        const { data: insertedCustomer, error: insertError } = await (supabase
-          .from("customer") as any)
-          .insert({
-            phone,
-            name,
-            flat_no: flatNo || null,
-            society_id: finalSocietyId,
-            whatsapp_opt_in: true,
-          })
-          .select("id")
-          .maybeSingle();
-
-        if (insertedCustomer && (insertedCustomer as any).id) {
-          customerId = (insertedCustomer as any).id;
-        } else {
-          console.error("Error creating customer record:", insertError || customerError);
-          return {
-            success: false,
-            error: customerError?.message || insertError?.message || "Could not save your contact details. Please try again or message us on WhatsApp.",
-          };
-        }
+        console.error("Error creating customer record:", insertError || findError);
+        return {
+          success: false,
+          error: insertError?.message || findError?.message || "Could not save your contact details. Please try again or message us on WhatsApp.",
+        };
       }
     }
 
@@ -179,7 +172,9 @@ export async function submitLeadAction(
     }
 
     // 7. Step 3: Insert Job with State Machine default 'New'
+    const generatedJobId = crypto.randomUUID();
     const jobPayload: any = {
+      id: generatedJobId,
       customer_id: customerId,
       service,
       description: `[${societyName || "Apartment"} - ${flatNo || "Unit"}] ${description}`,
@@ -206,7 +201,9 @@ export async function submitLeadAction(
       jobError = retryResult.error;
     }
 
-    if (jobError || !job) {
+    const createdJobId = (job as any)?.id || (!jobError ? generatedJobId : null);
+
+    if (jobError && !createdJobId) {
       console.error("Error creating job record:", jobError);
       return {
         success: false,
@@ -214,7 +211,6 @@ export async function submitLeadAction(
       };
     }
 
-    const createdJobId = (job as any).id;
     console.log(`✅ Service Request logged successfully with Ticket ID: ${createdJobId}`);
 
     return {
