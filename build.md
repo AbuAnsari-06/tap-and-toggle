@@ -444,3 +444,18 @@
   - Did not commit API keys to git (kept strictly in user's Vercel settings and local `.env.local`).
 - **Assumptions:**
   - User will paste `NEXT_PUBLIC_SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` alongside this URL into Vercel.
+
+## Turn 32 — Live Production Deployment QA & Final Status Verification
+- **Actions Completed:**
+  - Verified live Vercel production URL [`https://tap-and-toggle.vercel.app/`](https://tap-and-toggle.vercel.app/) returning HTTP 200 OK.
+  - Verified end-to-end user workflows:
+    1. **Public Customer Landing Page (`/`):** Hero section, rate card, 7-day warranty badge, DPDP consent checkbox, and lead submission form.
+    2. **Public Customer Live Tracker (`/track/[jobId]`):** 5-stage live status stepper, technician card, breakdown billing, and warranty seal.
+    3. **Admin Dispatch Portal (`/admin`):** Login bypass/demo mode, triage board with status state machine, pro bench management, 1-click WhatsApp dispatch generator, and dynamic Doorstep UPI QR payment modal.
+    4. **Legal & Compliance (`/privacy` & `/terms`):** Lawyer review draft banners, DPDP Act 2023 purpose specs, photo work-proof disclaimers, and 0 occurrences of forbidden word "insured".
+  - Updated [build.md](file:///d:/Abu%20Horairah%20Ansari/Internship_Projects/Tap%20&%20Toggle/build.md) and [to-do.md](file:///d:/Abu%20Horairah%20Ansari/Internship_Projects/Tap%20&%20Toggle/to-do.md).
+- **What was NOT done:**
+  - Third-party merchant KYC for Razorpay (plug-and-play webhook is installed at `/api/webhooks/razorpay`; Direct UPI QR serves as Day-1 operational substitute).
+- **Assumptions:**
+  - System is completely live and operational for commercial launch in NIBM Pune.
+
