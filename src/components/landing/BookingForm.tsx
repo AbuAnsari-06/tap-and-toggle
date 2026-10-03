@@ -3,7 +3,8 @@
 import React, { useState } from "react";
 import { submitLeadAction, SubmitLeadState } from "@/app/actions/submitLead";
 import { SITE_CONFIG } from "@/config/site";
-import { Droplets, Zap, Send, CheckCircle, AlertCircle, ShieldCheck, Upload, AlertTriangle, ExternalLink } from "lucide-react";
+import { generateCustomerConfirmationWhatsAppUrl } from "@/lib/whatsapp";
+import { Droplets, Zap, Send, CheckCircle, AlertCircle, ShieldCheck, Upload, AlertTriangle, ExternalLink, MessageSquare } from "lucide-react";
 import Link from "next/link";
 
 const LAUNCH_SOCIETIES = [
@@ -27,6 +28,14 @@ export function BookingForm() {
   const [photoName, setPhotoName] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverState, setServerState] = useState<SubmitLeadState | null>(null);
+  const [submittedData, setSubmittedData] = useState<{
+    name: string;
+    societyName: string;
+    flatNo: string;
+    service: "plumbing" | "electrical";
+    description: string;
+    isEmergency: boolean;
+  } | null>(null);
 
   const handlePhoneChange = (val: string) => {
     let cleaned = val.replace(/[^0-9]/g, "");
@@ -62,10 +71,20 @@ export function BookingForm() {
     formData.append("is_emergency", isEmergency ? "true" : "false");
     formData.append("dpdp_consent", dpdpConsent ? "true" : "false");
 
+    const currentPayload = {
+      name,
+      societyName,
+      flatNo,
+      service,
+      description,
+      isEmergency,
+    };
+
     try {
       const res = await submitLeadAction(null, formData);
       setServerState(res);
       if (res.success) {
+        setSubmittedData(currentPayload);
         // Reset form on success
         setName("");
         setPhone("");
@@ -104,7 +123,7 @@ export function BookingForm() {
 
         {/* Success Confirmation Card */}
         {serverState?.success ? (
-          <div className="p-8 rounded-3xl bg-brand-teal-50/80 border-2 border-brand-teal-400 text-center space-y-4 shadow-sm animate-in fade-in zoom-in-95 duration-300">
+          <div className="p-8 rounded-3xl bg-brand-teal-50/80 border-2 border-brand-teal-400 text-center space-y-5 shadow-sm animate-in fade-in zoom-in-95 duration-300">
             <div className="w-16 h-16 rounded-2xl bg-brand-teal-700 text-white flex items-center justify-center mx-auto shadow-md">
               <CheckCircle className="w-8 h-8 text-brand-teal-100" />
             </div>
@@ -116,18 +135,40 @@ export function BookingForm() {
             </p>
             <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
               {serverState.jobId && (
-                <Link
-                  href={`/track/${serverState.jobId}`}
-                  className="px-5 py-2.5 rounded-xl bg-brand-amber-500 hover:bg-brand-amber-600 text-brand-grey-950 text-xs font-bold shadow transition-colors inline-flex items-center gap-1.5"
-                >
-                  <span>Track Status Live</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </Link>
+                <>
+                  <Link
+                    href={`/track/${serverState.jobId}`}
+                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-brand-amber-500 hover:bg-brand-amber-600 text-brand-grey-950 text-xs font-bold shadow transition-colors inline-flex items-center justify-center gap-1.5"
+                  >
+                    <span>Track Status Live</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </Link>
+
+                  {submittedData && (
+                    <a
+                      href={generateCustomerConfirmationWhatsAppUrl({
+                        jobId: serverState.jobId,
+                        customerName: submittedData.name,
+                        societyName: submittedData.societyName,
+                        flatNo: submittedData.flatNo,
+                        service: submittedData.service,
+                        description: submittedData.description,
+                        isEmergency: submittedData.isEmergency,
+                      })}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow transition-colors inline-flex items-center justify-center gap-1.5"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Open WhatsApp Chat</span>
+                    </a>
+                  )}
+                </>
               )}
               <button
                 type="button"
                 onClick={() => setServerState(null)}
-                className="px-5 py-2.5 rounded-xl bg-brand-teal-700 hover:bg-brand-teal-800 text-white text-xs font-bold shadow transition-colors"
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-brand-teal-700 hover:bg-brand-teal-800 text-white text-xs font-bold shadow transition-colors"
               >
                 Submit Another Request
               </button>
