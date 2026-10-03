@@ -40,6 +40,7 @@ import {
   generateWarrantyReceiptWhatsAppUrl,
 } from "@/lib/whatsapp";
 import { DoorstepPaymentModal } from "@/components/admin/DoorstepPaymentModal";
+import { WhatsAppTemplatesModal } from "@/components/admin/WhatsAppTemplatesModal";
 
 const ALL_STATUSES: JobStatus[] = [
   "New",
@@ -70,6 +71,7 @@ export default function AdminDashboardPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedJob, setSelectedJob] = useState<AdminJobView | null>(null);
   const [paymentJob, setPaymentJob] = useState<AdminJobView | null>(null);
+  const [whatsAppModalJob, setWhatsAppModalJob] = useState<AdminJobView | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Modal editing form state
@@ -598,6 +600,16 @@ export default function AdminDashboardPage() {
                     </button>
                   )}
 
+                  {/* WhatsApp Quick Templates Button */}
+                  <button
+                    type="button"
+                    onClick={() => setWhatsAppModalJob(job)}
+                    className="p-1.5 rounded-xl bg-emerald-950 hover:bg-emerald-900 border border-emerald-700/60 text-emerald-400 hover:text-emerald-300 transition cursor-pointer"
+                    title="Open WhatsApp Templates Hub"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                  </button>
+
                   {/* Manage Ticket Button */}
                   <button
                     type="button"
@@ -920,6 +932,15 @@ export default function AdminDashboardPage() {
               )
             );
           }}
+        />
+      )}
+
+      {/* WhatsApp Communication Hub Modal */}
+      {whatsAppModalJob && (
+        <WhatsAppTemplatesModal
+          job={whatsAppModalJob}
+          pros={pros}
+          onClose={() => setWhatsAppModalJob(null)}
         />
       )}
     </div>
