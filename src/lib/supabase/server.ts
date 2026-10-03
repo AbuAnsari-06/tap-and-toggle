@@ -12,9 +12,16 @@ export function getAdminSupabaseClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!supabaseUrl || !serviceRoleKey) {
+  if (
+    !supabaseUrl ||
+    !serviceRoleKey ||
+    supabaseUrl.includes("your-project") ||
+    supabaseUrl.includes("placeholder") ||
+    serviceRoleKey.includes("your-service-role-key") ||
+    serviceRoleKey.includes("placeholder")
+  ) {
     throw new Error(
-      "Missing Supabase environment variables: Ensure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are defined in .env.local"
+      "Missing or default Supabase environment variables: Ensure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are defined in .env.local"
     );
   }
 

@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS public.job (
             'No-show', 'Partial'
         )
     ),
+    is_emergency BOOLEAN NOT NULL DEFAULT FALSE,
     requested_slot TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
 );

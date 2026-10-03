@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { getAdminSupabaseClient } from "@/lib/supabase/server";
 
 /**
@@ -9,11 +10,50 @@ import { getAdminSupabaseClient } from "@/lib/supabase/server";
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text();
-    const event = JSON.parse(rawBody);
+    const webhookSignature = req.headers.get("x-razorpay-signature");
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
+    // 1. Mandatory Razorpay Webhook Signature Verification
+    if (!webhookSecret) {
+      console.error("❌ RAZORPAY_WEBHOOK_SECRET environment variable is missing.");
+      return NextResponse.json(
+        { error: "Webhook secret is not configured on the server" },
+        { status: 500 }
+      );
+    }
+
+    if (!webhookSignature) {
+      console.warn("⚠️ Razorpay webhook rejected: missing x-razorpay-signature header");
+      return NextResponse.json(
+        { error: "Missing x-razorpay-signature header" },
+        { status: 400 }
+      );
+    }
+
+    const expectedSignature = crypto
+      .createHmac("sha256", webhookSecret)
+      .update(rawBody)
+      .digest("hex");
+
+    const isSignatureValid =
+      expectedSignature.length === webhookSignature.length &&
+      crypto.timingSafeEqual(
+        Buffer.from(expectedSignature, "utf8"),
+        Buffer.from(webhookSignature, "utf8")
+      );
+
+    if (!isSignatureValid) {
+      console.warn("⚠️ Razorpay webhook rejected: invalid signature");
+      return NextResponse.json(
+        { error: "Invalid webhook signature" },
+        { status: 400 }
+      );
+    }
+
+    const event = JSON.parse(rawBody);
     const eventType = event.event;
 
-    // Handle payment.captured or order.paid
+    // 2. Handle payment.captured or order.paid
     if (eventType === "payment.captured" || eventType === "order.paid") {
       const paymentEntity = event.payload?.payment?.entity || {};
       const orderEntity = event.payload?.order?.entity || {};
@@ -53,7 +93,7 @@ export async function POST(req: NextRequest) {
             })
             .eq("id", jobId);
 
-          console.log(`Job ${jobId} transitioned to 'Paid' via Razorpay webhook.`);
+          console.log(`✅ Job ${jobId} transitioned to 'Paid' via verified Razorpay webhook.`);
         } catch (dbErr: any) {
           console.error("Database update failed during Razorpay webhook:", dbErr);
         }

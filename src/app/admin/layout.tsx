@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { checkAdminSessionAction, adminSignOutAction } from "@/app/actions/authActions";
 import {
   ClipboardList,
   Users,
@@ -37,26 +37,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
 
     const checkAuth = async () => {
-      // 1. Check local demo flag first
+      // 1. Verify server-side HttpOnly signed session cookie
+      const session = await checkAdminSessionAction();
+      if (session.authenticated) {
+        if (session.email) setUserEmail(session.email);
+        setIsAuthenticated(true);
+        return;
+      }
+
+      // 2. Fallback check for local storage
       const demoAuth = localStorage.getItem("tt_admin_authenticated");
       const storedEmail = localStorage.getItem("tt_admin_user");
       if (demoAuth === "true") {
         if (storedEmail) setUserEmail(storedEmail);
         setIsAuthenticated(true);
         return;
-      }
-
-      // 2. Check Supabase session if configured
-      if (
-        process.env.NEXT_PUBLIC_SUPABASE_URL &&
-        !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
-      ) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          setUserEmail(data.session.user.email || "admin@tapandtoggle.in");
-          setIsAuthenticated(true);
-          return;
-        }
       }
 
       // Not authenticated, redirect to login
@@ -70,12 +65,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const handleSignOut = async () => {
     localStorage.removeItem("tt_admin_authenticated");
     localStorage.removeItem("tt_admin_user");
-    if (
-      process.env.NEXT_PUBLIC_SUPABASE_URL &&
-      !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
-    ) {
-      await supabase.auth.signOut();
-    }
+    await adminSignOutAction();
     router.push("/admin/login");
   };
 

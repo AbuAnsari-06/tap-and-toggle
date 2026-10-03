@@ -44,18 +44,23 @@ function getStageIndex(status: JobStatus): number {
     case "Estimated":
     case "Approved":
     case "Scheduled":
+    case "Rescheduled":
       return 2;
     case "Assigned":
     case "On the way":
       return 3;
     case "Arrived":
     case "In Progress":
+    case "Partial":
       return 4;
     case "Done":
     case "Paid":
     case "Warranty":
     case "Closed":
       return 5;
+    case "Cancelled":
+    case "No-show":
+      return 0;
     default:
       return 1;
   }
@@ -210,6 +215,49 @@ export default function CustomerTrackingPage() {
                     </h4>
                     <p className="text-xs text-red-800 mt-0.5 leading-relaxed">
                       This ticket is prioritized for urgent response (&lt;30 minutes in NIBM) due to active water leakage or electrical safety concern.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Status Specific Alerts */}
+              {(ticket.status === "Cancelled" || ticket.status === "No-show") && (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-bold text-rose-950 uppercase tracking-wider">
+                      Ticket {ticket.status === "No-show" ? "Marked as Missed / No-show" : "Cancelled"}
+                    </h4>
+                    <p className="text-xs text-rose-800 mt-0.5 leading-relaxed">
+                      This service ticket is currently closed. If you need a technician dispatched, please reach out directly on WhatsApp to reschedule.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {ticket.status === "Rescheduled" && (
+                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">
+                      Visit Rescheduled
+                    </h4>
+                    <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
+                      Your appointment has been rescheduled. Our dispatch team will confirm the revised slot on WhatsApp.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {ticket.status === "Partial" && (
+                <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 flex items-start gap-3">
+                  <Wrench className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-xs font-bold text-purple-950 uppercase tracking-wider">
+                      Partial Repair / Parts Procurement Active
+                    </h4>
+                    <p className="text-xs text-purple-800 mt-0.5 leading-relaxed">
+                      Initial diagnostics complete. The technician is sourcing required replacement parts for follow-up completion.
                     </p>
                   </div>
                 </div>

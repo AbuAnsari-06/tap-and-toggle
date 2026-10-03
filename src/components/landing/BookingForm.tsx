@@ -25,9 +25,18 @@ export function BookingForm() {
   const [isEmergency, setIsEmergency] = useState(false);
   const [dpdpConsent, setDpdpConsent] = useState(false); // Strictly unticked by default
   const [photoName, setPhotoName] = useState<string | null>(null);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverState, setServerState] = useState<SubmitLeadState | null>(null);
+
+  const handlePhoneChange = (val: string) => {
+    let cleaned = val.replace(/[^0-9]/g, "");
+    if (cleaned.length === 12 && cleaned.startsWith("91")) {
+      cleaned = cleaned.substring(2);
+    } else if (cleaned.length === 11 && cleaned.startsWith("0")) {
+      cleaned = cleaned.substring(1);
+    }
+    setPhone(cleaned.slice(0, 10));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -199,10 +208,9 @@ export function BookingForm() {
                     id="lead-phone"
                     type="tel"
                     required
-                    maxLength={10}
                     placeholder="9876543210"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value.replace(/[^0-9]/g, ""))}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
                     className="w-full pl-12 pr-4 py-3 rounded-xl bg-white border border-brand-grey-300 text-sm focus:ring-2 focus:ring-brand-teal-500 focus:border-brand-teal-500 outline-none transition"
                   />
                 </div>

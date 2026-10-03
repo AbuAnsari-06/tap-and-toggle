@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -39,6 +41,7 @@ export default function AdminProsPage() {
   const [newBaseRate, setNewBaseRate] = useState<number>(350);
   const [newVetting, setNewVetting] = useState("Aadhaar verified · Police verification on file");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Test Dispatch Modal
   const [dispatchPro, setDispatchPro] = useState<Pro | null>(null);
@@ -67,6 +70,7 @@ export default function AdminProsPage() {
   const handleAddPro = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormError(null);
 
     const res = await addProAction({
       name: newName,
@@ -81,6 +85,9 @@ export default function AdminProsPage() {
       setShowAddModal(false);
       setNewName("");
       setNewPhone("");
+      setFormError(null);
+    } else {
+      setFormError(res.error || "Failed to onboard technician. Please verify database connection.");
     }
     setIsSubmitting(false);
   };
@@ -408,6 +415,13 @@ export default function AdminProsPage() {
             </div>
 
             <form onSubmit={handleAddPro} className="space-y-4">
+              {formError && (
+                <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
+
               <div>
                 <label className="text-xs font-semibold text-brand-grey-200 block mb-1">
                   Full Name

@@ -30,7 +30,15 @@ export interface DoorstepPaymentModalProps {
   partsAmount: number;
   handlingFee: number;
   onClose: () => void;
-  onPaymentSuccess?: (invoiceNo: string) => void;
+  onPaymentSuccess?: (
+    invoiceNo: string,
+    financials?: {
+      final_amount: number;
+      estimate_amount: number;
+      parts_amount: number;
+      handling_fee: number;
+    }
+  ) => void;
 }
 
 export function DoorstepPaymentModal({
@@ -109,11 +117,21 @@ Or pay doorstep directly via Google Pay / PhonePe / Paytm / BHIM.
       method: paymentMethod as PaymentMethod,
       upi_ref_no: upiRefNo,
       notes: `Doorstep settlement confirmed via ${paymentMethod} by operator`,
+      estimate_amount: labor,
+      parts_amount: parts,
+      handling_fee: handling,
     });
 
     if (res.success && res.invoiceNo) {
       setSuccessInvoice(res.invoiceNo);
-      if (onPaymentSuccess) onPaymentSuccess(res.invoiceNo);
+      if (onPaymentSuccess) {
+        onPaymentSuccess(res.invoiceNo, {
+          final_amount: totalBill,
+          estimate_amount: labor,
+          parts_amount: parts,
+          handling_fee: handling,
+        });
+      }
     }
     setIsProcessing(false);
   };

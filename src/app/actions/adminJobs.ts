@@ -1,6 +1,7 @@
 "use server";
 
 import { getAdminSupabaseClient } from "@/lib/supabase/server";
+import { verifyAdminSession } from "@/lib/auth/adminAuth";
 import { JobStatus, ServiceType } from "@/types/database";
 
 export interface AdminJobView {
@@ -112,6 +113,11 @@ const SEED_BENCH_JOBS: AdminJobView[] = [
 
 export async function fetchAdminJobsAction(): Promise<{ success: boolean; jobs: AdminJobView[]; error?: string }> {
   try {
+    const auth = await verifyAdminSession();
+    if (!auth.authenticated) {
+      return { success: false, jobs: [], error: auth.error || "Unauthorized" };
+    }
+
     let supabase;
     try {
       supabase = getAdminSupabaseClient();
@@ -194,6 +200,11 @@ export async function updateJobStatusAction(
   newStatus: JobStatus
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const auth = await verifyAdminSession();
+    if (!auth.authenticated) {
+      return { success: false, error: auth.error || "Unauthorized" };
+    }
+
     let supabase;
     try {
       supabase = getAdminSupabaseClient();
@@ -228,6 +239,11 @@ export async function updateJobDetailsAction(
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const auth = await verifyAdminSession();
+    if (!auth.authenticated) {
+      return { success: false, error: auth.error || "Unauthorized" };
+    }
+
     let supabase;
     try {
       supabase = getAdminSupabaseClient();

@@ -76,11 +76,21 @@ export async function submitLeadAction(
       supabase = getAdminSupabaseClient();
     } catch (err: any) {
       // In local dev without live Supabase credentials, log and return graceful demo response
-      console.warn("Supabase credentials not configured in .env.local:", err.message);
+      console.warn("⚠️ Supabase credentials not configured or using placeholders in .env.local:", err.message);
+      console.log("📦 Service Request Received in Local Dev Mode:", {
+        name,
+        phone,
+        service,
+        societyName,
+        flatNo,
+        description,
+        isEmergency,
+        timestamp: new Date().toISOString(),
+      });
       return {
         success: true,
-        message: `Request received for ${name} (${phone})! Our dispatch team will WhatsApp you shortly with your free estimate. (Local Dev Mode)`,
-        jobId: "demo-job-" + Date.now(),
+        message: `Request received for ${name} (+91 ${phone})! Our dispatch team will WhatsApp you shortly with your free estimate. (Local Dev Mode)`,
+        jobId: "demo-job-101",
       };
     }
 
@@ -99,6 +109,7 @@ export async function submitLeadAction(
     }
 
     // 5. Step 1: Upsert Customer by Unique Phone Number (Dedupe Key)
+    let customerId: string | null = null;
     const { data: customer, error: customerError } = await (supabase
       .from("customer") as any)
       .upsert(
@@ -112,59 +123,110 @@ export async function submitLeadAction(
         { onConflict: "phone" }
       )
       .select("id")
-      .single();
+      .maybeSingle();
 
-    if (customerError || !customer) {
-      console.error("Error upserting customer:", customerError);
-      return {
-        success: false,
-        error: "Could not save your contact details. Please try again or message us on WhatsApp.",
-      };
+    if (customer && (customer as any).id) {
+      customerId = (customer as any).id;
+    } else {
+      console.warn("Customer upsert warning:", customerError?.message || "No data returned, checking existing record");
+      
+      // Fallback: check if customer already exists by phone
+      const { data: existingCustomer } = await (supabase
+        .from("customer") as any)
+        .select("id")
+        .eq("phone", phone)
+        .maybeSingle();
+
+      if (existingCustomer && (existingCustomer as any).id) {
+        customerId = (existingCustomer as any).id;
+      } else {
+        // Fallback: try plain insert
+        const { data: insertedCustomer, error: insertError } = await (supabase
+          .from("customer") as any)
+          .insert({
+            phone,
+            name,
+            flat_no: flatNo || null,
+            society_id: finalSocietyId,
+            whatsapp_opt_in: true,
+          })
+          .select("id")
+          .maybeSingle();
+
+        if (insertedCustomer && (insertedCustomer as any).id) {
+          customerId = (insertedCustomer as any).id;
+        } else {
+          console.error("Error creating customer record:", insertError || customerError);
+          return {
+            success: false,
+            error: customerError?.message || insertError?.message || "Could not save your contact details. Please try again or message us on WhatsApp.",
+          };
+        }
+      }
     }
 
     // 6. Step 2: Insert DPDP Consent Record
-    const { error: consentError } = await (supabase.from("consent_record") as any).insert({
-      customer_id: customer.id,
-      purpose: "service_request_contact",
-      text_version: SITE_CONFIG.dpdpConsent.version,
-    });
+    if (customerId) {
+      const { error: consentError } = await (supabase.from("consent_record") as any).insert({
+        customer_id: customerId,
+        purpose: "service_request_contact",
+        text_version: SITE_CONFIG.dpdpConsent.version,
+      });
 
-    if (consentError) {
-      console.error("Error creating consent record:", consentError);
-      // Non-fatal if customer is created, but logged for audit compliance
+      if (consentError) {
+        console.warn("Notice: Consent record creation warning (non-fatal):", consentError.message);
+      }
     }
 
     // 7. Step 3: Insert Job with State Machine default 'New'
-    const { data: job, error: jobError } = await (supabase
+    const jobPayload: any = {
+      customer_id: customerId,
+      service,
+      description: `[${societyName || "Apartment"} - ${flatNo || "Unit"}] ${description}`,
+      status: "New",
+      is_emergency: isEmergency,
+    };
+
+    let { data: job, error: jobError } = await (supabase
       .from("job") as any)
-      .insert({
-        customer_id: customer.id,
-        service,
-        description: `[${societyName || "Apartment"} - ${flatNo || "Unit"}] ${description}`,
-        status: "New",
-        is_emergency: isEmergency,
-      })
+      .insert(jobPayload)
       .select("id")
-      .single();
+      .maybeSingle();
+
+    // If failed due to is_emergency column missing in an unmigrated database, gracefully retry without is_emergency
+    if (jobError && (jobError.message?.includes("is_emergency") || jobError.code === "42703")) {
+      console.warn("Retrying job insert without is_emergency column (database might not have P1 migration applied)...");
+      const { is_emergency: _unused, ...fallbackPayload } = jobPayload;
+      const retryResult = await (supabase
+        .from("job") as any)
+        .insert(fallbackPayload)
+        .select("id")
+        .maybeSingle();
+      job = retryResult.data;
+      jobError = retryResult.error;
+    }
 
     if (jobError || !job) {
       console.error("Error creating job record:", jobError);
       return {
         success: false,
-        error: "Your contact details were saved, but creating the service ticket failed. Please message us on WhatsApp.",
+        error: jobError?.message || "Your contact details were saved, but creating the service ticket failed. Please message us on WhatsApp.",
       };
     }
+
+    const createdJobId = (job as any).id;
+    console.log(`✅ Service Request logged successfully with Ticket ID: ${createdJobId}`);
 
     return {
       success: true,
       message: `Thank you, ${name}! Your request has been logged. Our dispatch team will reach out on WhatsApp at +91 ${phone} with your free estimate.`,
-      jobId: job.id,
+      jobId: createdJobId,
     };
   } catch (error: any) {
     console.error("Unexpected error in submitLeadAction:", error);
     return {
       success: false,
-      error: "An unexpected error occurred while submitting your request. Please try again or reach out on WhatsApp.",
+      error: error?.message || "An unexpected error occurred while submitting your request. Please try again or reach out on WhatsApp.",
     };
   }
 }

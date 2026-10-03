@@ -1,6 +1,7 @@
 "use server";
 
 import { getAdminSupabaseClient } from "@/lib/supabase/server";
+import { verifyAdminSession } from "@/lib/auth/adminAuth";
 import { Pro, ServiceType } from "@/types/database";
 
 const SEED_PROS: Pro[] = [
@@ -68,6 +69,11 @@ export async function fetchAdminProsAction(): Promise<{
   error?: string;
 }> {
   try {
+    const auth = await verifyAdminSession();
+    if (!auth.authenticated) {
+      return { success: false, pros: [], error: auth.error || "Unauthorized" };
+    }
+
     let supabase;
     try {
       supabase = getAdminSupabaseClient();
@@ -95,6 +101,11 @@ export async function toggleProStatusAction(
   active: boolean
 ): Promise<{ success: boolean; error?: string }> {
   try {
+    const auth = await verifyAdminSession();
+    if (!auth.authenticated) {
+      return { success: false, error: auth.error || "Unauthorized" };
+    }
+
     let supabase;
     try {
       supabase = getAdminSupabaseClient();
@@ -124,6 +135,11 @@ export async function addProAction(proData: {
   vetting_docs_ref?: string;
 }): Promise<{ success: boolean; pro?: Pro; error?: string }> {
   try {
+    const auth = await verifyAdminSession();
+    if (!auth.authenticated) {
+      return { success: false, error: auth.error || "Unauthorized" };
+    }
+
     let supabase;
     try {
       supabase = getAdminSupabaseClient();

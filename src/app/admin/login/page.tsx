@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase/client";
+import { adminLoginAction } from "@/app/actions/authActions";
 import { SITE_CONFIG } from "@/config/site";
 import { ShieldAlert, Lock, Mail, ArrowRight, Sparkles, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
@@ -20,27 +20,22 @@ export default function AdminLoginPage() {
     setError(null);
 
     try {
-      // 1. Attempt Supabase Auth if real keys exist
-      if (
-        process.env.NEXT_PUBLIC_SUPABASE_URL &&
-        !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
-      ) {
-        const { error: authError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const formData = new FormData();
+      formData.append("email", email);
+      formData.append("password", password);
 
-        if (authError) {
-          setError(authError.message);
-          setLoading(false);
-          return;
-        }
+      const res = await adminLoginAction(null, formData);
+
+      if (!res.success) {
+        setError(res.error || "Failed to sign in. Please verify your credentials.");
+        setLoading(false);
+        return;
       }
 
-      // 2. Set operator session flag for local dev / demo resilience
+      // Set operator flag for UI presentation
       if (typeof window !== "undefined") {
         localStorage.setItem("tt_admin_authenticated", "true");
-        localStorage.setItem("tt_admin_user", email || "operator@tapandtoggle.in");
+        localStorage.setItem("tt_admin_user", res.email || email);
       }
 
       router.push("/admin");
@@ -51,12 +46,30 @@ export default function AdminLoginPage() {
     }
   };
 
-  const handleDemoLogin = () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("tt_admin_authenticated", "true");
-      localStorage.setItem("tt_admin_user", "nibm_dispatcher@tapandtoggle.in");
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const formData = new FormData();
+      formData.append("demo", "true");
+      formData.append("email", "nibm_dispatcher@tapandtoggle.in");
+
+      const res = await adminLoginAction(null, formData);
+
+      if (res.success) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("tt_admin_authenticated", "true");
+          localStorage.setItem("tt_admin_user", res.email || "nibm_dispatcher@tapandtoggle.in");
+        }
+        router.push("/admin");
+      } else {
+        setError(res.error || "Failed to launch demo mode.");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to launch demo mode.");
+    } finally {
+      setLoading(false);
     }
-    router.push("/admin");
   };
 
   return (

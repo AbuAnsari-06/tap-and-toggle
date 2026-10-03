@@ -1,6 +1,7 @@
 "use server";
 
 import { getAdminSupabaseClient } from "@/lib/supabase/server";
+import { verifyAdminSession } from "@/lib/auth/adminAuth";
 import { PaymentMethod, PaymentStatus } from "@/types/database";
 
 export interface RecordPaymentInput {
@@ -10,6 +11,9 @@ export interface RecordPaymentInput {
   upi_ref_no?: string;
   notes?: string;
   settled_to_pro_amount?: number;
+  parts_amount?: number;
+  handling_fee?: number;
+  estimate_amount?: number;
 }
 
 export async function recordPaymentAction(input: RecordPaymentInput): Promise<{
@@ -19,6 +23,11 @@ export async function recordPaymentAction(input: RecordPaymentInput): Promise<{
   error?: string;
 }> {
   try {
+    const auth = await verifyAdminSession();
+    if (!auth.authenticated) {
+      return { success: false, error: auth.error || "Unauthorized: Operator login required." };
+    }
+
     const invoiceNo = `TT-INV-${Date.now().toString().slice(-6)}`;
     let supabase;
     try {
@@ -54,13 +63,18 @@ export async function recordPaymentAction(input: RecordPaymentInput): Promise<{
       return { success: false, error: paymentError.message };
     }
 
-    // 2. Transition Job status to 'Paid' (unlocking 7-day warranty)
+    // 2. Transition Job status to 'Paid' (unlocking 7-day warranty) and sync financial amounts
+    const jobUpdatePayload: any = {
+      status: "Paid",
+      final_amount: input.amount,
+    };
+    if (input.parts_amount !== undefined) jobUpdatePayload.parts_amount = input.parts_amount;
+    if (input.handling_fee !== undefined) jobUpdatePayload.handling_fee = input.handling_fee;
+    if (input.estimate_amount !== undefined) jobUpdatePayload.estimate_amount = input.estimate_amount;
+
     const { error: jobUpdateError } = await (supabase
       .from("job") as any)
-      .update({
-        status: "Paid",
-        final_amount: input.amount,
-      })
+      .update(jobUpdatePayload)
       .eq("id", input.jobId);
 
     if (jobUpdateError) {

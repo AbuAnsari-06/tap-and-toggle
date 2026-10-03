@@ -25,13 +25,14 @@ import {
   Check,
   QrCode,
 } from "lucide-react";
-import { JobStatus, ServiceType } from "@/types/database";
+import { JobStatus, ServiceType, Pro } from "@/types/database";
 import {
   AdminJobView,
   fetchAdminJobsAction,
   updateJobStatusAction,
   updateJobDetailsAction,
 } from "@/app/actions/adminJobs";
+import { fetchAdminProsAction } from "@/app/actions/adminPros";
 import { generateWhatsAppDispatchLink } from "@/lib/dispatch/whatsappDispatch";
 import { DoorstepPaymentModal } from "@/components/admin/DoorstepPaymentModal";
 
@@ -51,18 +52,14 @@ const ALL_STATUSES: JobStatus[] = [
   "Closed",
   "Rescheduled",
   "Cancelled",
-];
-
-const BENCH_PROS = [
-  { id: "pro-001", name: "Ramesh Shinde", phone: "+91 98220 11111", service: "plumbing" },
-  { id: "pro-002", name: "Suresh Patil", phone: "+91 98220 22222", service: "plumbing" },
-  { id: "pro-003", name: "Amit Deshmukh", phone: "+91 98220 33333", service: "electrical" },
-  { id: "pro-004", name: "Vikas More", phone: "+91 98220 44444", service: "electrical" },
+  "No-show",
+  "Partial",
 ];
 
 export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(false);
   const [jobs, setJobs] = useState<AdminJobView[]>([]);
+  const [pros, setPros] = useState<Pro[]>([]);
   const [activeTab, setActiveTab] = useState<"all" | "emergency" | "new" | "in_field" | "completed">("all");
   const [filterService, setFilterService] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -77,17 +74,24 @@ export default function AdminDashboardPage() {
   const [modalParts, setModalParts] = useState<number>(0);
   const [modalHandling, setModalHandling] = useState<number>(30);
 
-  const loadJobs = async () => {
+  const loadData = async () => {
     setLoading(true);
-    const res = await fetchAdminJobsAction();
-    if (res.success && res.jobs) {
-      setJobs(res.jobs);
+    const [jobsRes, prosRes] = await Promise.all([
+      fetchAdminJobsAction(),
+      fetchAdminProsAction(),
+    ]);
+
+    if (jobsRes.success && jobsRes.jobs) {
+      setJobs(jobsRes.jobs);
+    }
+    if (prosRes.success && prosRes.pros) {
+      setPros(prosRes.pros);
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    loadJobs();
+    loadData();
   }, []);
 
   const openJobModal = (job: AdminJobView) => {
@@ -110,7 +114,7 @@ export default function AdminDashboardPage() {
     if (!selectedJob) return;
     setIsUpdating(true);
 
-    const chosenPro = BENCH_PROS.find((p) => p.id === modalProId);
+    const chosenPro = pros.find((p) => p.id === modalProId);
     const finalBill = Number(modalEstimate) + Number(modalParts) + Number(modalHandling);
 
     const updatedData = {
@@ -142,28 +146,53 @@ export default function AdminDashboardPage() {
 
   // Metrics counters
   const emergencyCount = jobs.filter((j) => j.is_emergency).length;
-  const newCount = jobs.filter((j) => j.status === "New" || j.status === "Contacted").length;
+  const newCount = jobs.filter(
+    (j) =>
+      j.status === "New" ||
+      j.status === "Contacted" ||
+      j.status === "Estimated" ||
+      j.status === "Approved" ||
+      j.status === "Scheduled" ||
+      j.status === "Rescheduled"
+  ).length;
   const inFieldCount = jobs.filter(
     (j) =>
       j.status === "Assigned" ||
       j.status === "On the way" ||
       j.status === "Arrived" ||
-      j.status === "In Progress"
+      j.status === "In Progress" ||
+      j.status === "Partial"
   ).length;
   const completedCount = jobs.filter(
-    (j) => j.status === "Done" || j.status === "Paid" || j.status === "Warranty" || j.status === "Closed"
+    (j) =>
+      j.status === "Done" ||
+      j.status === "Paid" ||
+      j.status === "Warranty" ||
+      j.status === "Closed"
   ).length;
 
   const filteredJobs = jobs.filter((j) => {
     if (activeTab === "emergency" && !j.is_emergency) return false;
-    if (activeTab === "new" && !(j.status === "New" || j.status === "Contacted")) return false;
+    if (
+      activeTab === "new" &&
+      !(
+        j.status === "New" ||
+        j.status === "Contacted" ||
+        j.status === "Estimated" ||
+        j.status === "Approved" ||
+        j.status === "Scheduled" ||
+        j.status === "Rescheduled"
+      )
+    )
+      return false;
     if (
       activeTab === "in_field" &&
       !(
         j.status === "Assigned" ||
         j.status === "On the way" ||
         j.status === "Arrived" ||
-        j.status === "In Progress"
+        j.status === "In Progress" ||
+        j.status === "Partial"
       )
     )
       return false;
@@ -203,12 +232,16 @@ export default function AdminDashboardPage() {
       case "Approved":
       case "Scheduled":
         return "bg-indigo-500/20 text-indigo-300 border-indigo-500/40";
+      case "Rescheduled":
+        return "bg-orange-500/20 text-orange-300 border-orange-500/40";
       case "Assigned":
       case "On the way":
       case "Arrived":
         return "bg-brand-teal-500/20 text-brand-teal-300 border-brand-teal-500/40";
       case "In Progress":
         return "bg-blue-500/20 text-blue-300 border-blue-500/40";
+      case "Partial":
+        return "bg-purple-500/20 text-purple-300 border-purple-500/40";
       case "Done":
         return "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
       case "Paid":
@@ -242,7 +275,7 @@ export default function AdminDashboardPage() {
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={loadJobs}
+            onClick={loadData}
             disabled={loading}
             className="px-3.5 py-2 rounded-xl bg-brand-grey-800 hover:bg-brand-grey-700 text-brand-grey-200 text-xs font-semibold border border-brand-grey-700 transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
           >
@@ -663,11 +696,13 @@ export default function AdminDashboardPage() {
                 className="w-full px-3.5 py-2.5 rounded-xl bg-brand-grey-800 border border-brand-grey-700 text-sm font-semibold text-brand-grey-100 focus:outline-none focus:border-brand-teal-500 cursor-pointer"
               >
                 <option value="">-- No Pro Assigned --</option>
-                {BENCH_PROS.filter((p) => p.service === selectedJob.service).map((pro) => (
-                  <option key={pro.id} value={pro.id}>
-                    {pro.name} ({pro.phone})
-                  </option>
-                ))}
+                {pros
+                  .filter((p) => p.service === selectedJob.service)
+                  .map((pro) => (
+                    <option key={pro.id} value={pro.id}>
+                      {pro.name} ({pro.phone}) {!pro.active ? "— Off Duty" : ""}
+                    </option>
+                  ))}
               </select>
             </div>
 
@@ -717,7 +752,7 @@ export default function AdminDashboardPage() {
             {modalProId && (
               <div className="pt-1">
                 {(() => {
-                  const assignedPro = BENCH_PROS.find((p) => p.id === modalProId);
+                  const assignedPro = pros.find((p) => p.id === modalProId);
                   if (!assignedPro) return null;
                   const dispatchLink = generateWhatsAppDispatchLink({
                     proPhone: assignedPro.phone,
@@ -791,9 +826,20 @@ export default function AdminDashboardPage() {
           partsAmount={paymentJob.parts_amount || 0}
           handlingFee={paymentJob.handling_fee || 30}
           onClose={() => setPaymentJob(null)}
-          onPaymentSuccess={(invoiceNo) => {
+          onPaymentSuccess={(invoiceNo, financials) => {
             setJobs((prev) =>
-              prev.map((j) => (j.id === paymentJob.id ? { ...j, status: "Paid" } : j))
+              prev.map((j) =>
+                j.id === paymentJob.id
+                  ? {
+                      ...j,
+                      status: "Paid",
+                      final_amount: financials?.final_amount ?? j.final_amount,
+                      estimate_amount: financials?.estimate_amount ?? j.estimate_amount,
+                      parts_amount: financials?.parts_amount ?? j.parts_amount,
+                      handling_fee: financials?.handling_fee ?? j.handling_fee,
+                    }
+                  : j
+              )
             );
           }}
         />
