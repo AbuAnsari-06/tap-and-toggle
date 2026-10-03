@@ -20,12 +20,19 @@ import {
   DollarSign,
   Star,
   RefreshCw,
+  Share2,
+  Check,
+  XCircle,
+  ThumbsUp,
+  CreditCard,
 } from "lucide-react";
 import { SITE_CONFIG } from "@/config/site";
 import { JobStatus } from "@/types/database";
 import {
   CustomerTrackingData,
   fetchCustomerTrackingAction,
+  approveCustomerEstimateAction,
+  cancelCustomerJobAction,
 } from "@/app/actions/trackJob";
 
 const TRACKING_STAGES = [
@@ -74,10 +81,12 @@ export default function CustomerTrackingPage() {
   const [loading, setLoading] = useState(true);
   const [ticket, setTicket] = useState<CustomerTrackingData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
-  const loadTicket = async () => {
-    setLoading(true);
-    setError(null);
+  const loadTicket = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     if (!jobId) {
       setError("Invalid tracking link.");
       setLoading(false);
@@ -87,47 +96,144 @@ export default function CustomerTrackingPage() {
     const res = await fetchCustomerTrackingAction(jobId);
     if (res.success && res.data) {
       setTicket(res.data);
+      setError(null);
     } else {
-      setError(res.error || "Unable to locate service ticket.");
+      if (!ticket) setError(res.error || "Unable to locate service ticket.");
     }
-    setLoading(false);
+    if (!isBackground) setLoading(false);
   };
 
   useEffect(() => {
     loadTicket();
+
+    // Auto-poll status every 10 seconds so customer sees real-time updates seamlessly
+    const interval = setInterval(() => {
+      loadTicket(true);
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [jobId]);
+
+  const handleApproveEstimate = async () => {
+    if (!ticket) return;
+    setActionLoading(true);
+    setActionMessage(null);
+    const res = await approveCustomerEstimateAction(ticket.id);
+    if (res.success) {
+      setActionMessage(res.message || "Estimate approved! Dispatching technician.");
+      await loadTicket();
+    } else {
+      alert(res.error || "Failed to approve estimate.");
+    }
+    setActionLoading(false);
+  };
+
+  const handleCancelJob = async () => {
+    if (!ticket) return;
+    const confirmCancel = window.confirm(
+      "Are you sure you want to cancel this service request?"
+    );
+    if (!confirmCancel) return;
+
+    setActionLoading(true);
+    const res = await cancelCustomerJobAction(ticket.id, "Customer requested cancellation");
+    if (res.success) {
+      setActionMessage(res.message || "Request cancelled.");
+      await loadTicket();
+    } else {
+      alert(res.error || "Failed to cancel request.");
+    }
+    setActionLoading(false);
+  };
+
+  const handleShareLink = () => {
+    if (navigator.share) {
+      navigator
+        .share({
+          title: `Tap & Toggle Ticket #${ticket?.id.slice(0, 8)}`,
+          text: `Track our ${ticket?.service} service request at ${ticket?.society_name}:`,
+          url: window.location.href,
+        })
+        .catch(() => {});
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+    }
+  };
 
   const currentStage = ticket ? getStageIndex(ticket.status) : 1;
 
-  // WhatsApp Support Link
+  // WhatsApp Support Links
   const waSupportLink = `https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
     `Hi Tap & Toggle team, checking on ticket #${ticket?.id.slice(0, 8) || "NIBM"} at ${
       ticket?.society_name || "NIBM"
     } (${ticket?.flat_no || ""}).`
   )}`;
 
+  const waApproveLink = `https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
+    `Hi Tap & Toggle, I approve the estimate of ₹${ticket?.estimate_amount || 0} for ticket #${ticket?.id.slice(
+      0,
+      8
+    )}. Please dispatch technician.`
+  )}`;
+
   return (
     <div className="min-h-screen bg-brand-grey-50 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-3xl mx-auto space-y-6">
-        {/* Navigation & Header */}
+        {/* Navigation & Action Bar */}
         <div className="flex items-center justify-between pb-4 border-b border-brand-grey-200">
           <Link
             href="/"
             className="inline-flex items-center gap-2 text-xs font-bold text-brand-teal-800 hover:text-brand-teal-900 transition"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Tap &amp; Toggle</span>
+            <span>Back to Home</span>
           </Link>
 
-          <button
-            type="button"
-            onClick={loadTicket}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-brand-grey-200 text-xs font-semibold text-brand-grey-700 hover:bg-brand-grey-100 transition shadow-xs cursor-pointer"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-            <span>Refresh Status</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleShareLink}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-brand-grey-200 text-xs font-semibold text-brand-grey-700 hover:bg-brand-grey-100 transition shadow-xs cursor-pointer"
+            >
+              {copiedLink ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="text-emerald-700">Link Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-3.5 h-3.5 text-brand-grey-500" />
+                  <span>Share Tracking</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => loadTicket()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-brand-grey-200 text-xs font-semibold text-brand-grey-700 hover:bg-brand-grey-100 transition shadow-xs cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span className="hidden sm:inline">Refresh</span>
+            </button>
+          </div>
         </div>
+
+        {/* Action Success Toast */}
+        {actionMessage && (
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center justify-between animate-in fade-in">
+            <span>{actionMessage}</span>
+            <button
+              type="button"
+              onClick={() => setActionMessage(null)}
+              className="text-emerald-700 hover:text-emerald-900"
+            >
+              &times;
+            </button>
+          </div>
+        )}
 
         {/* Loading State */}
         {loading && !ticket && (
@@ -159,7 +265,7 @@ export default function CustomerTrackingPage() {
           </div>
         )}
 
-        {/* Live Ticket Card */}
+        {/* Live Ticket Details */}
         {ticket && (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Top Ticket Summary Card */}
@@ -205,6 +311,46 @@ export default function CustomerTrackingPage() {
                 </div>
               </div>
 
+              {/* 1-Click Estimate Approval Banner (When status is Estimated) */}
+              {ticket.status === "Estimated" && ticket.estimate_amount && (
+                <div className="p-5 rounded-2xl bg-brand-amber-50 border-2 border-brand-amber-400 text-brand-grey-950 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-5 h-5 text-brand-amber-600" />
+                      <span className="font-extrabold text-sm">
+                        Free Estimate Ready: ₹{ticket.estimate_amount}
+                      </span>
+                    </div>
+                    <span className="text-xs font-bold text-brand-grey-600">
+                      No Advance Required
+                    </span>
+                  </div>
+                  <p className="text-xs text-brand-grey-700 leading-relaxed">
+                    Our dispatch team has assessed your request. Approve the quote below to dispatch the nearest verified pro immediately.
+                  </p>
+                  <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                    <button
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={handleApproveEstimate}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-teal-700 hover:bg-brand-teal-800 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <ThumbsUp className="w-4 h-4" />
+                      <span>Approve Estimate (₹{ticket.estimate_amount})</span>
+                    </button>
+                    <a
+                      href={waApproveLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-2"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Approve on WhatsApp</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {/* Emergency Alert Banner */}
               {ticket.is_emergency && (
                 <div className="p-4 rounded-2xl bg-red-50 border border-red-200 flex items-start gap-3">
@@ -215,49 +361,6 @@ export default function CustomerTrackingPage() {
                     </h4>
                     <p className="text-xs text-red-800 mt-0.5 leading-relaxed">
                       This ticket is prioritized for urgent response (&lt;30 minutes in NIBM) due to active water leakage or electrical safety concern.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Status Specific Alerts */}
-              {(ticket.status === "Cancelled" || ticket.status === "No-show") && (
-                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-bold text-rose-950 uppercase tracking-wider">
-                      Ticket {ticket.status === "No-show" ? "Marked as Missed / No-show" : "Cancelled"}
-                    </h4>
-                    <p className="text-xs text-rose-800 mt-0.5 leading-relaxed">
-                      This service ticket is currently closed. If you need a technician dispatched, please reach out directly on WhatsApp to reschedule.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {ticket.status === "Rescheduled" && (
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-bold text-amber-950 uppercase tracking-wider">
-                      Visit Rescheduled
-                    </h4>
-                    <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">
-                      Your appointment has been rescheduled. Our dispatch team will confirm the revised slot on WhatsApp.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {ticket.status === "Partial" && (
-                <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 flex items-start gap-3">
-                  <Wrench className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-bold text-purple-950 uppercase tracking-wider">
-                      Partial Repair / Parts Procurement Active
-                    </h4>
-                    <p className="text-xs text-purple-800 mt-0.5 leading-relaxed">
-                      Initial diagnostics complete. The technician is sourcing required replacement parts for follow-up completion.
                     </p>
                   </div>
                 </div>
@@ -285,7 +388,7 @@ export default function CustomerTrackingPage() {
                     <div
                       className="h-full bg-brand-teal-600 transition-all duration-500"
                       style={{
-                        width: `${((currentStage - 1) / (TRACKING_STAGES.length - 1)) * 100}%`,
+                        width: `${((Math.max(1, currentStage) - 1) / (TRACKING_STAGES.length - 1)) * 100}%`,
                       }}
                     />
                   </div>
@@ -365,15 +468,25 @@ export default function CustomerTrackingPage() {
                       </span>
                     </div>
                   </div>
+
+                  {ticket.pro.phone && (
+                    <a
+                      href={`tel:${ticket.pro.phone}`}
+                      className="p-3 rounded-2xl bg-brand-teal-100 text-brand-teal-900 hover:bg-brand-teal-200 transition"
+                      title="Call Technician"
+                    >
+                      <Phone className="w-5 h-5" />
+                    </a>
+                  )}
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-brand-teal-50/70 border border-brand-teal-200 text-xs text-brand-teal-950 leading-relaxed">
-                  💡 <strong>Gate Entry Tip:</strong> When the guard rings via MyGate or NoBrokerHood, tap <strong>Approve</strong>. Our pro carries verified ID from Tap &amp; Toggle.
+                  💡 <strong>Gate Entry Tip:</strong> When security asks via MyGate or NoBrokerHood, approve entry for <strong>Tap &amp; Toggle</strong>.
                 </div>
               </div>
             )}
 
-            {/* Bill & Transparency Breakdown (If amounts exist) */}
+            {/* Transparent Bill Breakdown */}
             {(ticket.estimate_amount || ticket.final_amount) && (
               <div className="bg-white rounded-3xl p-6 sm:p-7 border border-brand-grey-200 shadow-sm space-y-4">
                 <h3 className="text-sm font-extrabold text-brand-grey-900 uppercase tracking-wider flex items-center gap-1.5">
@@ -429,20 +542,56 @@ export default function CustomerTrackingPage() {
               ticket.status === "Paid" ||
               ticket.status === "Warranty" ||
               ticket.status === "Closed") && (
-              <div className="bg-emerald-50 rounded-3xl p-6 border-2 border-emerald-300 shadow-sm flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow">
-                  <ShieldCheck className="w-6 h-6" />
+              <div className="bg-emerald-50 rounded-3xl p-6 border-2 border-emerald-300 shadow-sm space-y-3">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-extrabold text-emerald-950">
+                      7-Day Workmanship Warranty Active
+                    </h4>
+                    <p className="text-xs text-emerald-900 leading-relaxed">
+                      If this repair has any recurring leakage or electrical fault within 7 days, we dispatch a technician to revisit for free.
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h4 className="text-sm font-extrabold text-emerald-950">
-                    7-Day Workmanship Warranty Active
-                  </h4>
-                  <p className="text-xs text-emerald-900 leading-relaxed">
-                    If this repair has any recurring leakage, loose connection, or fault within 7 days, we dispatch a technician to revisit for free.
-                  </p>
+
+                <div className="pt-2 border-t border-emerald-200 flex justify-end">
+                  <a
+                    href={`https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                      `Hi Tap & Toggle, I'd like to claim my 7-day warranty for Ticket #${ticket.id.slice(
+                        0,
+                        8
+                      )} at ${ticket.society_name}.`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Claim Warranty on WhatsApp</span>
+                  </a>
                 </div>
               </div>
             )}
+
+            {/* Customer Self-Serve Actions: Cancel or Speak with Dispatch */}
+            {ticket.status !== "Cancelled" &&
+              ticket.status !== "Done" &&
+              ticket.status !== "Paid" &&
+              ticket.status !== "Closed" && (
+                <div className="text-center pt-2">
+                  <button
+                    type="button"
+                    onClick={handleCancelJob}
+                    disabled={actionLoading}
+                    className="text-xs text-rose-600 hover:text-rose-800 font-semibold underline cursor-pointer"
+                  >
+                    Need to cancel this request?
+                  </button>
+                </div>
+              )}
 
             {/* Help & Support CTA */}
             <div className="bg-brand-grey-900 text-white rounded-3xl p-6 sm:p-7 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">

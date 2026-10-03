@@ -208,3 +208,58 @@ export async function fetchCustomerTrackingAction(
     };
   }
 }
+
+export async function approveCustomerEstimateAction(
+  jobId: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const supabase = getAdminSupabaseClient();
+    const { error } = await (supabase.from("job") as any)
+      .update({ status: "Approved" })
+      .eq("id", jobId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: true,
+      message: "Estimate approved! Dispatching the nearest vetted pro to your society.",
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || "Failed to approve estimate. Please message us on WhatsApp.",
+    };
+  }
+}
+
+export async function cancelCustomerJobAction(
+  jobId: string,
+  reason?: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const supabase = getAdminSupabaseClient();
+    const { error } = await (supabase.from("job") as any)
+      .update({
+        status: "Cancelled",
+        description: reason ? `[Cancelled by Customer: ${reason}]` : undefined,
+      })
+      .eq("id", jobId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: true,
+      message: "Your service request has been cancelled.",
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || "Failed to cancel request. Please message us on WhatsApp.",
+    };
+  }
+}
+
