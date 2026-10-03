@@ -34,6 +34,11 @@ import {
 } from "@/app/actions/adminJobs";
 import { fetchAdminProsAction } from "@/app/actions/adminPros";
 import { generateWhatsAppDispatchLink } from "@/lib/dispatch/whatsappDispatch";
+import {
+  generateEstimateQuoteWhatsAppUrl,
+  generateProAssignedWhatsAppUrl,
+  generateWarrantyReceiptWhatsAppUrl,
+} from "@/lib/whatsapp";
 import { DoorstepPaymentModal } from "@/components/admin/DoorstepPaymentModal";
 
 const ALL_STATUSES: JobStatus[] = [
@@ -748,38 +753,111 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* 1-Click WhatsApp Dispatch Briefing Button */}
-            {modalProId && (
-              <div className="pt-1">
-                {(() => {
-                  const assignedPro = pros.find((p) => p.id === modalProId);
-                  if (!assignedPro) return null;
-                  const dispatchLink = generateWhatsAppDispatchLink({
-                    proPhone: assignedPro.phone,
-                    proName: assignedPro.name,
+            {/* 1-Click WhatsApp Communications Hub */}
+            <div className="space-y-2 pt-1 border-t border-brand-grey-800">
+              <span className="text-[11px] font-bold text-brand-grey-400 uppercase tracking-wider block">
+                1-Click WhatsApp Actions
+              </span>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {/* 1. Send Estimate to Customer */}
+                <a
+                  href={generateEstimateQuoteWhatsAppUrl({
+                    jobId: selectedJob.id,
                     customerName: selectedJob.customer_name,
                     customerPhone: selectedJob.customer_phone,
                     societyName: selectedJob.society_name,
                     flatNo: selectedJob.flat_no,
                     service: selectedJob.service,
-                    description: selectedJob.description,
-                    isEmergency: selectedJob.is_emergency,
-                    jobId: selectedJob.id,
-                  });
-                  return (
-                    <a
-                      href={dispatchLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 px-4 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition flex items-center justify-center gap-2"
-                    >
-                      <MessageSquare className="w-4 h-4 text-emerald-400" />
-                      <span>1-Click WhatsApp Dispatch to {assignedPro.name}</span>
-                    </a>
-                  );
-                })()}
+                    estimateAmount: modalEstimate || selectedJob.estimate_amount || 0,
+                  })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2 px-3 rounded-xl bg-brand-teal-950 hover:bg-brand-teal-900 border border-brand-teal-700/60 text-brand-teal-300 font-semibold text-xs transition flex items-center justify-center gap-1.5"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-brand-teal-400" />
+                  <span>Send Estimate Quote</span>
+                </a>
+
+                {/* 2. Send Pro Assigned & ETA to Customer */}
+                {modalProId && (
+                  <a
+                    href={generateProAssignedWhatsAppUrl({
+                      jobId: selectedJob.id,
+                      customerName: selectedJob.customer_name,
+                      customerPhone: selectedJob.customer_phone,
+                      societyName: selectedJob.society_name,
+                      flatNo: selectedJob.flat_no,
+                      service: selectedJob.service,
+                      proName: pros.find((p) => p.id === modalProId)?.name,
+                      proPhone: pros.find((p) => p.id === modalProId)?.phone,
+                      proRating: pros.find((p) => p.id === modalProId)?.health_score || 5.0,
+                    })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-2 px-3 rounded-xl bg-amber-950 hover:bg-amber-900 border border-amber-700/60 text-amber-300 font-semibold text-xs transition flex items-center justify-center gap-1.5"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Send Pro ETA to Resident</span>
+                  </a>
+                )}
+
+                {/* 3. Send Warranty Receipt to Customer */}
+                {(modalStatus === "Done" || modalStatus === "Paid" || modalStatus === "Warranty") && (
+                  <a
+                    href={generateWarrantyReceiptWhatsAppUrl({
+                      jobId: selectedJob.id,
+                      customerName: selectedJob.customer_name,
+                      customerPhone: selectedJob.customer_phone,
+                      societyName: selectedJob.society_name,
+                      flatNo: selectedJob.flat_no,
+                      service: selectedJob.service,
+                      finalAmount:
+                        Number(modalEstimate) + Number(modalParts) + Number(modalHandling),
+                    })}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-2 px-3 rounded-xl bg-emerald-950 hover:bg-emerald-900 border border-emerald-700/60 text-emerald-300 font-semibold text-xs transition flex items-center justify-center gap-1.5"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Send Warranty Receipt</span>
+                  </a>
+                )}
               </div>
-            )}
+
+              {/* 4. Dispatch Briefing to Pro */}
+              {modalProId && (
+                <div>
+                  {(() => {
+                    const assignedPro = pros.find((p) => p.id === modalProId);
+                    if (!assignedPro) return null;
+                    const dispatchLink = generateWhatsAppDispatchLink({
+                      proPhone: assignedPro.phone,
+                      proName: assignedPro.name,
+                      customerName: selectedJob.customer_name,
+                      customerPhone: selectedJob.customer_phone,
+                      societyName: selectedJob.society_name,
+                      flatNo: selectedJob.flat_no,
+                      service: selectedJob.service,
+                      description: selectedJob.description,
+                      isEmergency: selectedJob.is_emergency,
+                      jobId: selectedJob.id,
+                    });
+                    return (
+                      <a
+                        href={dispatchLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-2.5 px-4 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition flex items-center justify-center gap-2"
+                      >
+                        <MessageSquare className="w-4 h-4 text-emerald-400" />
+                        <span>Dispatch Work Order to {assignedPro.name}</span>
+                      </a>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
 
             {/* Modal Actions */}
             <div className="flex items-center justify-end gap-3 pt-2">

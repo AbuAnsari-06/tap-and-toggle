@@ -263,3 +263,32 @@ export async function cancelCustomerJobAction(
   }
 }
 
+export async function rescheduleCustomerJobAction(
+  jobId: string,
+  preferredSlot: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    const supabase = getAdminSupabaseClient();
+    const { error } = await (supabase.from("job") as any)
+      .update({
+        status: "Rescheduled",
+        requested_slot: preferredSlot,
+      })
+      .eq("id", jobId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return {
+      success: true,
+      message: `Reschedule request for ${preferredSlot} received! Dispatch team will confirm.`,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || "Failed to reschedule. Please message us on WhatsApp.",
+    };
+  }
+}
+
