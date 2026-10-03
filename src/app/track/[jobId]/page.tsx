@@ -537,40 +537,151 @@ export default function CustomerTrackingPage() {
               </div>
             )}
 
-            {/* 7-Day Warranty Badge */}
+            {/* Post-Service Instant Payment via UPI (When status is Done) */}
+            {ticket.status === "Done" && (
+              <div className="bg-gradient-to-br from-emerald-900 to-brand-teal-950 text-white rounded-3xl p-6 sm:p-8 shadow-xl border border-emerald-500/30 space-y-5 animate-in fade-in">
+                <div className="flex items-center justify-between pb-4 border-b border-emerald-800/60">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-extrabold text-white">
+                        Work Completed · Settle Bill via UPI
+                      </h3>
+                      <p className="text-xs text-emerald-300">
+                        Pay securely after work inspection. 7-day warranty activates instantly.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-2xl font-black text-emerald-400">
+                    ₹
+                    {ticket.final_amount ||
+                      (ticket.estimate_amount || 0) +
+                        (ticket.parts_amount || 0) +
+                        (ticket.handling_fee || 0)}
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  {/* UPI Deep Link for Mobile Devices */}
+                  <a
+                    href={`upi://pay?pa=tapandtoggle@okhdfcbank&pn=Tap%26Toggle&am=${
+                      ticket.final_amount ||
+                      (ticket.estimate_amount || 0) +
+                        (ticket.parts_amount || 0) +
+                        (ticket.handling_fee || 0)
+                    }&tn=TT_${ticket.id.slice(0, 8)}&cu=INR`}
+                    className="w-full sm:w-auto flex-1 py-3.5 px-5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-brand-grey-950 font-black text-xs transition flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+                  >
+                    <Zap className="w-4 h-4 fill-brand-grey-950" />
+                    <span>Pay with GPay / PhonePe / Paytm / UPI</span>
+                  </a>
+
+                  {/* WhatsApp Payment Confirmation */}
+                  <a
+                    href={`https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                      `Hi Tap & Toggle, I have paid the bill of ₹${
+                        ticket.final_amount ||
+                        (ticket.estimate_amount || 0) +
+                          (ticket.parts_amount || 0) +
+                          (ticket.handling_fee || 0)
+                      } for Ticket #${ticket.id.slice(0, 8)} at ${ticket.society_name}.`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto py-3.5 px-5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs transition flex items-center justify-center gap-2"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>Confirm Payment on WhatsApp</span>
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {/* 7-Day Digital Warranty Certificate Card */}
             {(ticket.status === "Done" ||
               ticket.status === "Paid" ||
               ticket.status === "Warranty" ||
               ticket.status === "Closed") && (
-              <div className="bg-emerald-50 rounded-3xl p-6 border-2 border-emerald-300 shadow-sm space-y-3">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow">
-                    <ShieldCheck className="w-6 h-6" />
+              <div className="bg-gradient-to-b from-emerald-50 to-white rounded-3xl p-6 sm:p-8 border-2 border-emerald-300 shadow-md space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-emerald-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 text-[10px] font-black uppercase tracking-wider mb-1">
+                        Verified Workmanship Certificate
+                      </div>
+                      <h4 className="text-base font-black text-emerald-950">
+                        7-Day Peace-of-Mind Warranty Active
+                      </h4>
+                    </div>
                   </div>
-                  <div className="space-y-1">
-                    <h4 className="text-sm font-extrabold text-emerald-950">
-                      7-Day Workmanship Warranty Active
-                    </h4>
-                    <p className="text-xs text-emerald-900 leading-relaxed">
-                      If this repair has any recurring leakage or electrical fault within 7 days, we dispatch a technician to revisit for free.
-                    </p>
+
+                  <div className="text-left sm:text-right">
+                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">
+                      Certificate ID
+                    </span>
+                    <span className="font-mono text-xs font-black text-emerald-900">
+                      TT-WAR-{ticket.id.slice(0, 8).toUpperCase()}
+                    </span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-emerald-200 flex justify-end">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs py-1">
+                  <div className="bg-white/80 p-3 rounded-xl border border-emerald-200">
+                    <span className="text-[10px] text-emerald-700 font-bold block mb-0.5">
+                      Covered Service
+                    </span>
+                    <span className="font-bold text-emerald-950 capitalize">
+                      {ticket.service} Fitting &amp; Repair
+                    </span>
+                  </div>
+                  <div className="bg-white/80 p-3 rounded-xl border border-emerald-200">
+                    <span className="text-[10px] text-emerald-700 font-bold block mb-0.5">
+                      Location
+                    </span>
+                    <span className="font-bold text-emerald-950">
+                      {ticket.society_name}, {ticket.flat_no}
+                    </span>
+                  </div>
+                  <div className="bg-white/80 p-3 rounded-xl border border-emerald-200">
+                    <span className="text-[10px] text-emerald-700 font-bold block mb-0.5">
+                      Warranty Period
+                    </span>
+                    <span className="font-bold text-emerald-950">
+                      7 Days Free Revisit
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-emerald-900/90 leading-relaxed">
+                  If this repair experiences any recurring fault, leakage, or loose connection within 7 days, our dispatch team will assign a technician to revisit and rectify it for <strong>free</strong>.
+                </p>
+
+                <div className="pt-2 flex flex-col sm:flex-row items-center justify-end gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-white border border-emerald-300 hover:bg-emerald-100 text-emerald-900 text-xs font-bold transition shadow-xs cursor-pointer"
+                  >
+                    Print / Save Certificate
+                  </button>
+
                   <a
                     href={`https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
-                      `Hi Tap & Toggle, I'd like to claim my 7-day warranty for Ticket #${ticket.id.slice(
-                        0,
-                        8
-                      )} at ${ticket.society_name}.`
+                      `Hi Tap & Toggle, I would like to claim my 7-day warranty for Ticket #TT-WAR-${ticket.id
+                        .slice(0, 8)
+                        .toUpperCase()} at ${ticket.society_name}.`
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
-                    <span>Claim Warranty on WhatsApp</span>
+                    <span>Claim Free Warranty Revisit</span>
                   </a>
                 </div>
               </div>
