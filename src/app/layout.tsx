@@ -53,6 +53,9 @@ export default function RootLayout({
                 <Link href="/#booking-form" className="hover:text-brand-teal-800 transition-colors">
                   Book a Pro
                 </Link>
+                <Link href="/society-partner" className="hover:text-brand-teal-800 transition-colors text-brand-teal-800 font-bold">
+                  Society RWA
+                </Link>
               </nav>
 
               <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-teal-50 border border-brand-teal-100 text-xs font-medium text-brand-teal-800">
@@ -107,6 +110,10 @@ export default function RootLayout({
                   <span>•</span>
                   <Link href="/#rate-card" className="hover:underline">
                     Rate Card
+                  </Link>
+                  <span>•</span>
+                  <Link href="/society-partner" className="hover:underline">
+                    Society Partner
                   </Link>
                   <span>•</span>
                   <Link href="/pro/login" className="text-brand-amber-600 hover:underline">

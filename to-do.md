@@ -204,3 +204,20 @@
   - Roadblock and delay reporting engine (`IssueModal.tsx`)
   - Doorstep UPI collection integration (`DoorstepPaymentModal.tsx`)
 
+---
+
+## Phase P3: Commercial Expansion & Institutional RWA Suite (Complete)
+
+### Step 17: Full Commercial Launch & Integration Engine
+- [x] Admin Triage Roadblock Alerts: Real-time roadblock badges & pro hardware receipts preview inside Operator Triage Board (`src/app/admin/page.tsx`).
+- [x] Society RWA Partnership Portal (`src/app/society-partner/page.tsx`):
+  - Dedicated landing & onboarding inquiry form for society chairmen, secretaries, and facility managers.
+  - Highlights Pre-approved Gate Rosters, Society Welfare Corpus Contribution, and Free Common-Area Pump Room Checks.
+- [x] Printable Tax Invoice & Official Warranty Certificate (`src/app/invoice/[jobId]/page.tsx`):
+  - Formatted for print/PDF (`window.print()`) with official Tap & Toggle Merchant of Record branding.
+  - Itemized breakdown of labor, hardware store materials, and procurement handling fee.
+  - Verifiable 7-Day Digital Workmanship Guarantee seal.
+- [x] Customer Live Tracker Invoice Button: Seamless link from `/track/[jobId]` directly into the formal tax invoice.
+- [x] 100% Production Build Pass (`next build`): 14/14 static and dynamic routes compiled cleanly.
+
+

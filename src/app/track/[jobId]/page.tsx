@@ -25,6 +25,7 @@ import {
   XCircle,
   ThumbsUp,
   CreditCard,
+  FileText,
 } from "lucide-react";
 import { SITE_CONFIG } from "@/config/site";
 import { JobStatus } from "@/types/database";
@@ -698,6 +699,14 @@ export default function CustomerTrackingPage() {
                 </p>
 
                 <div className="pt-2 flex flex-col sm:flex-row items-center justify-end gap-2.5">
+                  <Link
+                    href={`/invoice/${ticket.id}`}
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5"
+                  >
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>View Formal Tax Invoice</span>
+                  </Link>
+
                   <button
                     type="button"
                     onClick={() => window.print()}

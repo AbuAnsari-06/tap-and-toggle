@@ -24,6 +24,7 @@ import {
   Send,
   Check,
   QrCode,
+  Receipt,
 } from "lucide-react";
 import { JobStatus, ServiceType, Pro } from "@/types/database";
 import {
@@ -493,6 +494,22 @@ export default function AdminDashboardPage() {
                       </span>
                     )}
 
+                    {/* Pro Roadblock Alert Badge */}
+                    {job.issues && job.issues.length > 0 && (
+                      <span className="px-2.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-rose-950 text-rose-300 border border-rose-700 flex items-center gap-1 animate-pulse">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                        <span>Roadblock: {job.issues[0].category.replace(/_/g, " ")}</span>
+                      </span>
+                    )}
+
+                    {/* Pro Logged Parts Badge */}
+                    {job.expenses && job.expenses.length > 0 && (
+                      <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-amber-950/80 text-amber-300 border border-amber-700/80 flex items-center gap-1">
+                        <Receipt className="w-3 h-3 text-amber-400" />
+                        <span>{job.expenses.length} Parts Logged (₹{job.parts_amount})</span>
+                      </span>
+                    )}
+
                     {/* Service Type */}
                     <span
                       className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${
@@ -722,6 +739,42 @@ export default function AdminDashboardPage() {
                   ))}
               </select>
             </div>
+
+            {/* Pro Roadblock Alert in Modal (if present) */}
+            {selectedJob.issues && selectedJob.issues.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-rose-950/50 border border-rose-700/60 text-xs space-y-1">
+                <span className="font-extrabold text-rose-300 uppercase tracking-wider text-[10px] flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                  <span>Roadblock Reported by Pro: {selectedJob.issues[0].category.replace(/_/g, " ")}</span>
+                </span>
+                <p className="text-rose-100 text-xs">{selectedJob.issues[0].description}</p>
+              </div>
+            )}
+
+            {/* Pro Uploaded Expenses & Receipts (if present) */}
+            {selectedJob.expenses && selectedJob.expenses.length > 0 && (
+              <div className="p-3.5 rounded-2xl bg-brand-grey-800/80 border border-brand-grey-700 space-y-2">
+                <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block flex items-center gap-1">
+                  <Receipt className="w-3.5 h-3.5" />
+                  <span>Technician Logged Hardware Parts ({selectedJob.expenses.length}):</span>
+                </span>
+                <div className="space-y-1.5 text-xs">
+                  {selectedJob.expenses.map((exp) => (
+                    <div key={exp.id} className="flex items-center justify-between text-brand-grey-200 py-1 border-b border-brand-grey-700">
+                      <div>
+                        <span className="font-semibold block">{exp.item_name} (Qty {exp.quantity})</span>
+                        {exp.receipt_photo_url && (
+                          <a href={exp.receipt_photo_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-teal-400 hover:underline block font-mono">
+                            View Receipt Photo Proof
+                          </a>
+                        )}
+                      </div>
+                      <span className="font-bold text-amber-400">₹{exp.total_price}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Financial Calculator (Labor + Parts + Handling) */}
             <div className="bg-brand-grey-800/40 p-4 rounded-2xl border border-brand-grey-700/80 space-y-3">

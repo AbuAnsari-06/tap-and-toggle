@@ -2,7 +2,7 @@
 
 import { getAdminSupabaseClient } from "@/lib/supabase/server";
 import { verifyAdminSession } from "@/lib/auth/adminAuth";
-import { JobStatus, ServiceType } from "@/types/database";
+import { JobStatus, ServiceType, JobExpense, JobIssue } from "@/types/database";
 
 export interface AdminJobView {
   id: string;
@@ -24,6 +24,8 @@ export interface AdminJobView {
   handling_fee?: number | null;
   requested_slot?: string | null;
   created_at: string;
+  expenses?: JobExpense[];
+  issues?: JobIssue[];
 }
 
 // Fallback bench data when remote Supabase credentials are not populated
@@ -154,7 +156,9 @@ export async function fetchAdminJobsAction(): Promise<{ success: boolean; jobs: 
           id,
           name,
           phone
-        )
+        ),
+        expenses:job_expense (*),
+        issues:job_issue (*)
       `)
       .order("created_at", { ascending: false });
 
@@ -186,6 +190,8 @@ export async function fetchAdminJobsAction(): Promise<{ success: boolean; jobs: 
         handling_fee: j.handling_fee,
         requested_slot: j.requested_slot,
         created_at: j.created_at,
+        expenses: (j.expenses || []) as JobExpense[],
+        issues: (j.issues || []) as JobIssue[],
       };
     });
 
