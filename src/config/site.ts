@@ -19,6 +19,14 @@ export const SITE_CONFIG = {
   // Geographic launch focus
   serviceArea: "NIBM, Nyati, Sus & Phase 1–2, Pune",
 
+  // Platform Legal Positioning & Service Model Disclaimer
+  platformModel: {
+    role: "Professional Service Facilitation Platform",
+    technicianStatus: "Independent, Vetted Trade Technicians",
+    disclaimer:
+      "Tap & Toggle operates as a technology and service booking facilitation platform connecting residential societies with independent, verified trade technicians. Physical plumbing and electrical repairs are performed directly by independent service professionals under platform quality standards. Tap & Toggle coordinates upfront estimates, gate clearance, and a 7-day labor rework guarantee, but does not assume direct or vicarious liability for physical execution or pre-existing infrastructure flaws.",
+  },
+
   // Trust badges (strictly omitting 'insured' per non-negotiable rules)
   trustBadges: [
     {
@@ -43,10 +51,10 @@ export const SITE_CONFIG = {
     },
   ],
 
-  // DPDP Act 2023 Consent configuration for booking requests
+  // DPDP Act 2023 & Platform Model Consent configuration for booking requests
   dpdpConsent: {
-    version: "v1.0-2026",
-    text: "I consent to Tap & Toggle contacting me via phone or WhatsApp regarding my service request, and processing my contact details in accordance with the DPDP Act 2023.",
+    version: "v2.0-2026",
+    text: "I understand that Tap & Toggle is a professional service facilitation platform connecting me with independent, vetted trade technicians who perform the on-site work. I agree to the Terms of Service & Privacy Policy, and consent to service communication under the DPDP Act 2023.",
   },
 
   // Payment configuration (Direct UPI doorstep settlement + Razorpay ready)

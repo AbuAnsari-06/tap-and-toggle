@@ -121,6 +121,9 @@ export default function RootLayout({
                   </Link>
                 </div>
                 <p>© {new Date().getFullYear()} {SITE_CONFIG.name}. All rights reserved.</p>
+                <p className="text-[11px] text-brand-grey-400 text-center md:text-right max-w-sm">
+                  {SITE_CONFIG.name} is a service facilitation platform connecting housing societies with vetted independent trade technicians. On-site services are executed directly by independent technicians.
+                </p>
                 <div className="flex items-center gap-2 text-brand-grey-400 text-[11px]">
                   <span>Managed dispatch &amp; verified bench</span>
                   <span>•</span>

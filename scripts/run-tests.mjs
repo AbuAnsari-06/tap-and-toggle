@@ -83,6 +83,22 @@ function validateDPDPConsent(consentChecked) {
   return { valid: true };
 }
 
+function validatePhotosUpload(files) {
+  if (!files || files.length === 0) return { valid: true, count: 0 };
+  if (files.length > 5) {
+    return { valid: false, error: "Maximum 5 photos allowed", count: files.length };
+  }
+  for (const f of files) {
+    if (!f.type.startsWith("image/")) {
+      return { valid: false, error: "Invalid file type. Only images are allowed" };
+    }
+    if (f.size > 5 * 1024 * 1024) {
+      return { valid: false, error: "File exceeds 5MB limit" };
+    }
+  }
+  return { valid: true, count: files.length };
+}
+
 function calculateFinalBill(estimate, parts, handling) {
   const labor = Math.max(0, Number(estimate) || 0);
   const materials = Math.max(0, Number(parts) || 0);
@@ -178,6 +194,38 @@ assert(consentTrue.valid === true, "Booking form accepts submission when DPDP co
 assert(cleanPhone("+91 98220 11111") === "9822011111", "Normalizes Indian phone with spaces & +91");
 assert(cleanPhone("09822011111") === "9822011111", "Normalizes leading zero phone format");
 assert(cleanPhone("9822011111") === "9822011111", "Preserves exact 10-digit mobile number");
+
+// Multi-Image Upload Tests (1 to 5 images max)
+const samplePhotos = [
+  { name: "leak_tap1.jpg", type: "image/jpeg", size: 1024 * 500 },
+  { name: "pipe_rust2.png", type: "image/png", size: 1024 * 800 },
+  { name: "switchboard3.webp", type: "image/webp", size: 1024 * 300 },
+];
+const photoRes3 = validatePhotosUpload(samplePhotos);
+assert(photoRes3.valid === true && photoRes3.count === 3, "Accepts 3 fixture photos within the 1-5 limit");
+
+const maxPhotos = [
+  ...samplePhotos,
+  { name: "leak4.jpg", type: "image/jpeg", size: 1024 * 200 },
+  { name: "leak5.jpg", type: "image/jpeg", size: 1024 * 250 },
+];
+const photoRes5 = validatePhotosUpload(maxPhotos);
+assert(photoRes5.valid === true && photoRes5.count === 5, "Accepts maximum allowed 5 fixture photos");
+
+const overflowPhotos = [
+  ...maxPhotos,
+  { name: "leak6.jpg", type: "image/jpeg", size: 1024 * 100 },
+];
+const photoResOverflow = validatePhotosUpload(overflowPhotos);
+assert(photoResOverflow.valid === false, "Rejects more than 5 photos (strictly enforces 5 max limit)");
+
+const nonImageFile = [{ name: "document.pdf", type: "application/pdf", size: 1024 * 100 }];
+const photoResNonImage = validatePhotosUpload(nonImageFile);
+assert(photoResNonImage.valid === false, "Rejects non-image file formats");
+
+const oversizedImage = [{ name: "huge.jpg", type: "image/jpeg", size: 6 * 1024 * 1024 }];
+const photoResOversized = validatePhotosUpload(oversizedImage);
+assert(photoResOversized.valid === false, "Rejects photo exceeding 5MB individual file limit");
 
 // ---------------------------------------------------------------------------
 console.log("\n\x1b[1m[GROUP 4] Financial Calculator & Parts Actuals Tests\x1b[0m");

@@ -25,6 +25,8 @@ export async function submitLeadAction(
     const description = (formData.get("description") as string)?.trim();
     const isEmergency = formData.get("is_emergency") === "true" || formData.get("is_emergency") === "on";
     const dpdpConsent = formData.get("dpdp_consent") === "true" || formData.get("dpdp_consent") === "on";
+    const photoCount = parseInt((formData.get("photo_count") as string) || "0", 10);
+    const photoNames = (formData.get("photo_names") as string)?.trim();
 
     // 1. Mandatory DPDP Act 2023 Consent Check (Strict Launch Blocker)
     if (!dpdpConsent) {
@@ -173,11 +175,16 @@ export async function submitLeadAction(
 
     // 7. Step 3: Insert Job with State Machine default 'New'
     const generatedJobId = crypto.randomUUID();
+    let finalDescription = `[${societyName || "Apartment"} - ${flatNo || "Unit"}] ${description}`;
+    if (photoCount > 0) {
+      finalDescription += ` [${photoCount} photo(s) attached${photoNames ? `: ${photoNames}` : ""}]`;
+    }
+
     const jobPayload: any = {
       id: generatedJobId,
       customer_id: customerId,
       service,
-      description: `[${societyName || "Apartment"} - ${flatNo || "Unit"}] ${description}`,
+      description: finalDescription,
       status: "New",
       is_emergency: isEmergency,
     };

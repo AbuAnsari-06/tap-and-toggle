@@ -223,7 +223,6 @@ export function IssueModal({ jobId, onClose, onIssueReported }: IssueModalProps)
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   className="hidden"
                   onChange={handlePhotoCapture}
                 />

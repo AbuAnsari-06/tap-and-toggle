@@ -6,6 +6,18 @@ export interface FAQItem {
 
 export const FAQS: FAQItem[] = [
   {
+    question: "What is Tap & Toggle's role and responsibility regarding the services performed?",
+    answer:
+      "Tap & Toggle operates as a professional service facilitation platform connecting apartment residents with independent, vetted trade professionals. We handle technician background vetting, upfront pricing transparency, society gate clearance, and customer coordination. The physical execution of all repair work is carried out directly by independent trade technicians, who are directly responsible for their on-site craftsmanship. To protect you, Tap & Toggle facilitates a standard 7-day labor rework warranty where any workmanship fault is re-inspected and resolved at zero additional labor cost.",
+    category: "trust",
+  },
+  {
+    question: "Are the technicians employees of Tap & Toggle?",
+    answer:
+      "No. All plumbers and electricians operate as independent trade contractors on our managed closed bench. While Tap & Toggle verifies their identity, Aadhaar documentation, and past neighborhood track record, technicians remain independent service professionals responsible for their physical trade execution on-site.",
+    category: "trust",
+  },
+  {
     question: "Who are the technicians entering my apartment?",
     answer:
       "Every plumber and electrician on Tap & Toggle is personally hand-vetted by our founding team. We do not operate an open contractor marketplace. Pros undergo Aadhaar identity validation, police background checks, skill assessments, and carry verified personal accident cover. Most are familiar faces who have serviced NIBM communities for years.",

@@ -1,10 +1,25 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { submitLeadAction, SubmitLeadState } from "@/app/actions/submitLead";
 import { SITE_CONFIG } from "@/config/site";
 import { generateCustomerConfirmationWhatsAppUrl } from "@/lib/whatsapp";
-import { Droplets, Zap, Send, CheckCircle, AlertCircle, ShieldCheck, Upload, AlertTriangle, ExternalLink, MessageSquare } from "lucide-react";
+import {
+  Droplets,
+  Zap,
+  Send,
+  CheckCircle,
+  AlertCircle,
+  ShieldCheck,
+  Upload,
+  AlertTriangle,
+  ExternalLink,
+  MessageSquare,
+  Camera,
+  X,
+  Plus,
+  Info,
+} from "lucide-react";
 import Link from "next/link";
 
 const LAUNCH_SOCIETIES = [
@@ -16,6 +31,13 @@ const LAUNCH_SOCIETIES = [
   "Other / Standalone Building in NIBM",
 ];
 
+interface UploadedPhoto {
+  id: string;
+  name: string;
+  size: number;
+  dataUrl: string;
+}
+
 export function BookingForm() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -25,7 +47,9 @@ export function BookingForm() {
   const [description, setDescription] = useState("");
   const [isEmergency, setIsEmergency] = useState(false);
   const [dpdpConsent, setDpdpConsent] = useState(false); // Strictly unticked by default
-  const [photoName, setPhotoName] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<UploadedPhoto[]>([]);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverState, setServerState] = useState<SubmitLeadState | null>(null);
   const [submittedData, setSubmittedData] = useState<{
@@ -47,13 +71,69 @@ export function BookingForm() {
     setPhone(cleaned.slice(0, 10));
   };
 
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhotoError(null);
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const fileList = Array.from(files);
+    const remainingSlots = 5 - photos.length;
+
+    if (remainingSlots <= 0) {
+      setPhotoError("Maximum 5 photos allowed. Please remove a photo before adding more.");
+      return;
+    }
+
+    const filesToProcess = fileList.slice(0, remainingSlots);
+    if (fileList.length > remainingSlots) {
+      setPhotoError(`Only ${remainingSlots} more photo(s) could be added (max 5 allowed).`);
+    }
+
+    filesToProcess.forEach((file) => {
+      if (!file.type.startsWith("image/")) {
+        setPhotoError("Only image files (JPEG, PNG, WebP) are supported.");
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setPhotoError(`File "${file.name}" exceeds the 5MB size limit.`);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          const newPhoto: UploadedPhoto = {
+            id: `${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+            name: file.name,
+            size: file.size,
+            dataUrl: event.target.result as string,
+          };
+          setPhotos((prev) => {
+            if (prev.length >= 5) return prev;
+            return [...prev, newPhoto];
+          });
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const removePhoto = (id: string) => {
+    setPhotos((prev) => prev.filter((p) => p.id !== id));
+    setPhotoError(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!dpdpConsent) {
       setServerState({
         success: false,
-        error: "Please check the DPDP consent box below to allow us to contact you regarding your request.",
+        error: "Please review and check the agreement and DPDP consent box below before submitting.",
       });
       return;
     }
@@ -70,13 +150,15 @@ export function BookingForm() {
     formData.append("description", description);
     formData.append("is_emergency", isEmergency ? "true" : "false");
     formData.append("dpdp_consent", dpdpConsent ? "true" : "false");
+    formData.append("photo_count", photos.length.toString());
+    formData.append("photo_names", photos.map((p) => p.name).join(", "));
 
     const currentPayload = {
       name,
       societyName,
       flatNo,
       service,
-      description,
+      description: photos.length > 0 ? `${description} (${photos.length} photo(s) attached)` : description,
       isEmergency,
     };
 
@@ -92,7 +174,8 @@ export function BookingForm() {
         setDescription("");
         setIsEmergency(false);
         setDpdpConsent(false);
-        setPhotoName(null);
+        setPhotos([]);
+        setPhotoError(null);
       }
     } catch (err) {
       setServerState({
@@ -108,17 +191,25 @@ export function BookingForm() {
     <section id="booking-form" className="py-16 bg-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="text-center max-w-xl mx-auto mb-10">
+        <div className="text-center max-w-2xl mx-auto mb-10">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-teal-100 text-brand-teal-900 text-xs font-bold uppercase tracking-wider mb-2">
             <ShieldCheck className="w-3.5 h-3.5 text-brand-teal-700" />
             <span>DPDP Act 2023 Protected</span>
           </div>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-brand-grey-900 tracking-tight">
-            Request a Free Visit & Estimate
+            Request a Free Visit &amp; Estimate
           </h2>
           <p className="text-sm sm:text-base text-brand-grey-600 mt-2">
             Tell us what needs attention. We&apos;ll message you on WhatsApp with a free estimate before dispatching a vetted pro.
           </p>
+
+          {/* Service Platform Transparency Notice */}
+          <div className="mt-4 p-3.5 rounded-2xl bg-brand-teal-50/80 border border-brand-teal-200 text-xs text-brand-teal-950 flex items-start sm:items-center justify-center gap-2.5 text-left sm:text-center shadow-sm">
+            <Info className="w-4 h-4 text-brand-teal-700 shrink-0 mt-0.5 sm:mt-0" />
+            <span>
+              <strong>Platform Notice:</strong> Tap &amp; Toggle is a professional service facilitation platform that dispatches vetted independent technicians. Physical repair craftsmanship is performed directly by independent trade professionals under platform quality standards.
+            </span>
+          </div>
         </div>
 
         {/* Success Confirmation Card */}
@@ -327,35 +418,108 @@ export function BookingForm() {
               </label>
             </div>
 
-            {/* Optional Photo Input */}
-            <div>
-              <label className="block text-xs font-bold text-brand-grey-800 mb-1.5">
-                Optional Photo of Fixture (Work Proof Only)
-              </label>
-              <div className="relative border-2 border-dashed border-brand-grey-300 hover:border-brand-teal-400 rounded-xl p-4 bg-white text-center cursor-pointer transition">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      setPhotoName(e.target.files[0].name);
-                    }
-                  }}
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                />
-                <div className="flex items-center justify-center gap-2 text-xs text-brand-grey-600">
-                  <Upload className="w-4 h-4 text-brand-teal-600" />
-                  <span>{photoName ? `Selected: ${photoName}` : "Click to attach photo (optional)"}</span>
-                </div>
+            {/* Multi-Photo Input (3 to 5 images max) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-brand-grey-800">
+                  Photos of Fixture / Fault (Optional · Up to 5 photos)
+                </label>
+                <span className="text-[11px] font-semibold text-brand-teal-700 bg-brand-teal-50 px-2 py-0.5 rounded-full border border-brand-teal-200">
+                  {photos.length}/5 attached
+                </span>
               </div>
+
+              {/* Hidden Native File Input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/jpeg,image/png,image/webp,image/jpg"
+                onChange={handlePhotoSelect}
+                className="hidden"
+                id="booking-photo-upload"
+              />
+
+              {photos.length === 0 ? (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-brand-grey-300 hover:border-brand-teal-500 rounded-2xl p-6 bg-white text-center cursor-pointer transition group hover:bg-brand-teal-50/20"
+                >
+                  <div className="flex flex-col items-center justify-center gap-2 text-xs text-brand-grey-600">
+                    <div className="w-12 h-12 rounded-full bg-brand-teal-50 flex items-center justify-center text-brand-teal-700 group-hover:scale-105 transition-transform">
+                      <Camera className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-brand-grey-800 text-sm">
+                        Click or Tap to Upload Photos (1 to 5 max)
+                      </p>
+                      <p className="text-[11px] text-brand-grey-400 mt-0.5">
+                        Snap or select photos of the tap, pipe, switchboard, or leak. Max 5MB per photo.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    {photos.map((p, idx) => (
+                      <div
+                        key={p.id}
+                        className="relative group rounded-xl overflow-hidden border border-brand-grey-200 bg-brand-grey-100 shadow-sm aspect-square flex flex-col justify-between"
+                      >
+                        <img
+                          src={p.dataUrl}
+                          alt={`Uploaded proof ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Remove button */}
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(p.id)}
+                          className="absolute top-1.5 right-1.5 p-1 rounded-full bg-black/75 hover:bg-rose-600 text-white transition shadow"
+                          title="Remove photo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-1.5 text-[10px] text-white truncate">
+                          {p.name}
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Add More button if under 5 photos */}
+                    {photos.length < 5 && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="rounded-xl border-2 border-dashed border-brand-grey-300 hover:border-brand-teal-500 bg-white hover:bg-brand-teal-50/20 aspect-square flex flex-col items-center justify-center gap-1 text-xs text-brand-grey-600 transition cursor-pointer"
+                      >
+                        <Plus className="w-5 h-5 text-brand-teal-600" />
+                        <span className="font-semibold text-[11px]">Add Photo</span>
+                        <span className="text-[9px] text-brand-grey-400">
+                          ({5 - photos.length} left)
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {photoError && (
+                <p className="text-xs text-rose-600 font-medium mt-1 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>{photoError}</span>
+                </p>
+              )}
+
               <p className="text-[11px] text-brand-grey-400 mt-1">
-                Home photos are protected under our privacy policy and used strictly as technical work proof.
+                Fixture photos help our pros prepare the right spare parts in advance. Photos are kept strictly private under our privacy policy.
               </p>
             </div>
 
-            {/* DPDP Act 2023 Mandatory Consent Checkbox (Strictly Unticked) */}
+            {/* Platform Role & DPDP Act 2023 Mandatory Consent Checkbox (Strictly Unticked) */}
             <div className="pt-2">
-              <label className="flex items-start gap-3 p-4 rounded-xl bg-brand-teal-50/50 border border-brand-teal-200 cursor-pointer hover:bg-brand-teal-50 transition">
+              <label className="flex items-start gap-3 p-4 rounded-xl bg-brand-teal-50/60 border border-brand-teal-200 cursor-pointer hover:bg-brand-teal-50 transition">
                 <input
                   type="checkbox"
                   required
@@ -363,16 +527,16 @@ export function BookingForm() {
                   onChange={(e) => setDpdpConsent(e.target.checked)}
                   className="w-4 h-4 mt-1 rounded text-brand-teal-700 focus:ring-brand-teal-500 border-brand-grey-300 shrink-0"
                 />
-                <span className="text-xs text-brand-grey-700 leading-relaxed">
-                  {SITE_CONFIG.dpdpConsent.text}{" "}
-                  <Link href="/privacy" className="text-brand-teal-800 font-bold underline">
-                    Privacy Policy
+                <span className="text-xs text-brand-grey-800 leading-relaxed">
+                  I understand that Tap &amp; Toggle is a professional service facilitation platform connecting me with independent, vetted trade technicians who perform the on-site work. I agree to the{" "}
+                  <Link href="/terms" className="text-brand-teal-800 font-bold underline hover:text-brand-teal-950">
+                    Terms of Service
                   </Link>{" "}
-                  &{" "}
-                  <Link href="/terms" className="text-brand-teal-800 font-bold underline">
-                    Terms
+                  (including limitation of liability &amp; 7-day labor rework policy) &amp;{" "}
+                  <Link href="/privacy" className="text-brand-teal-800 font-bold underline hover:text-brand-teal-950">
+                    Privacy Policy
                   </Link>
-                  .
+                  , and consent to service communication under the DPDP Act 2023.
                 </span>
               </label>
             </div>
