@@ -2,6 +2,7 @@
 
 import { getAdminSupabaseClient } from "@/lib/supabase/server";
 import { verifyAdminSession } from "@/lib/auth/adminAuth";
+import { hashProPin } from "@/lib/auth/proAuth";
 import { Pro, ServiceType } from "@/types/database";
 
 const SEED_PROS: Pro[] = [
@@ -132,6 +133,8 @@ export async function addProAction(proData: {
   phone: string;
   service: ServiceType;
   base_rate: number;
+  pin?: string;
+  bank_upi_id?: string;
   vetting_docs_ref?: string;
 }): Promise<{ success: boolean; pro?: Pro; error?: string }> {
   try {
@@ -139,6 +142,9 @@ export async function addProAction(proData: {
     if (!auth.authenticated) {
       return { success: false, error: auth.error || "Unauthorized" };
     }
+
+    const pinToSet = proData.pin?.trim() || "1234";
+    const pinHash = hashProPin(pinToSet);
 
     let supabase;
     try {
@@ -150,6 +156,9 @@ export async function addProAction(proData: {
         phone: proData.phone,
         service: proData.service,
         base_rate: proData.base_rate,
+        pin_hash: pinHash,
+        pin_updated_at: new Date().toISOString(),
+        bank_upi_id: proData.bank_upi_id || null,
         active: true,
         gate_list_status: "approved",
         health_score: 5.0,
@@ -166,6 +175,9 @@ export async function addProAction(proData: {
         phone: proData.phone,
         service: proData.service,
         base_rate: proData.base_rate,
+        pin_hash: pinHash,
+        pin_updated_at: new Date().toISOString(),
+        bank_upi_id: proData.bank_upi_id || null,
         active: true,
         gate_list_status: "approved",
         health_score: 5.0,
@@ -183,3 +195,44 @@ export async function addProAction(proData: {
     return { success: false, error: err.message };
   }
 }
+
+export async function resetProPinAction(
+  proId: string,
+  newPin: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const auth = await verifyAdminSession();
+    if (!auth.authenticated) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    if (!newPin || newPin.trim().length < 4 || newPin.trim().length > 6) {
+      return { success: false, error: "PIN must be 4 to 6 numerical digits." };
+    }
+
+    const pinHash = hashProPin(newPin.trim());
+
+    let supabase;
+    try {
+      supabase = getAdminSupabaseClient();
+    } catch {
+      return { success: true };
+    }
+
+    const { error } = await (supabase.from("pro") as any)
+      .update({
+        pin_hash: pinHash,
+        pin_updated_at: new Date().toISOString(),
+      })
+      .eq("id", proId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+

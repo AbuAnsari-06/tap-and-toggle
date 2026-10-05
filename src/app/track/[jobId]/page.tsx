@@ -519,6 +519,42 @@ export default function CustomerTrackingPage() {
                       </span>
                     </div>
                   ) : null}
+
+                  {/* Itemized Parts List with Receipt Photos */}
+                  {ticket.expenses && ticket.expenses.length > 0 && (
+                    <div className="py-2.5 space-y-2 border-t border-brand-grey-100">
+                      <span className="text-[10px] font-bold text-brand-grey-500 uppercase tracking-wider block">
+                        Hardware Store Receipts Attached:
+                      </span>
+                      {ticket.expenses.map((exp) => (
+                        <div
+                          key={exp.id}
+                          className="p-2.5 rounded-xl bg-brand-grey-50 border border-brand-grey-200/80 flex items-center justify-between text-xs"
+                        >
+                          <div>
+                            <span className="font-bold text-brand-grey-900 block">
+                              {exp.item_name}
+                            </span>
+                            <span className="text-[11px] text-brand-grey-500">
+                              Qty {exp.quantity} × ₹{exp.unit_price}
+                            </span>
+                            {exp.receipt_photo_url && (
+                              <a
+                                href={exp.receipt_photo_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] text-brand-teal-700 hover:underline font-bold block mt-0.5"
+                              >
+                                📄 View Hardware Receipt Photo Proof
+                              </a>
+                            )}
+                          </div>
+                          <span className="font-black text-brand-grey-900">₹{exp.total_price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="flex justify-between pt-3 text-sm">
                     <span className="font-extrabold text-brand-grey-900">Total Accountable Bill</span>
                     <span className="font-black text-emerald-700 text-base">

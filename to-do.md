@@ -175,3 +175,32 @@
 - [x] Import repository to Vercel and configure environment variables
 - [x] Verified Live Vercel Production URL `https://tap-and-toggle.vercel.app/` (HTTP 200 OK)
 - [x] End-to-end live QA verification completed across customer and admin workflows
+
+---
+
+## Phase P2: Registered Pro Portal & Field Expense Engine (Complete)
+
+### Step 15: Hand-Vetted Pro Authentication & Session Layer
+- [x] Database migration (`supabase/migrations/20261005000000_phase1_pro_portal_expenses.sql`):
+  - Added `pin_hash`, `pin_updated_at`, `bank_upi_id`, `aadhaar_verified`, `active_job_count` to `pro` table.
+  - Created `job_expense` table with foreign keys, indexes, and RLS.
+  - Created `job_issue` table with category enum, severity enum, and RLS.
+- [x] Cryptographic PIN hashing (salted HMAC-SHA256) and HttpOnly `tt_pro_session` in `src/lib/auth/proAuth.ts`.
+- [x] Server actions for pro authentication (`src/app/actions/proAuthActions.ts`) with demo bypass.
+- [x] Extended `addProAction` with PIN onboarding and added `resetProPinAction` in `src/app/actions/adminPros.ts`.
+
+### Step 16: Technician Workspace & Execution Suite
+- [x] Mobile-first Pro Layout (`src/app/pro/layout.tsx`) with duty status and dispatch hotline.
+- [x] Pro PIN Login Screen (`src/app/pro/login/page.tsx`) with numerical keypad input & 1-tap demo sign in.
+- [x] Pro Day Sheet & Dashboard (`src/app/pro/page.tsx`):
+  - Duty toggle (On Duty / On Break)
+  - Persistent active in-field job highlight card
+  - Queue tabs (Today's Queue, Completed, Roadblocks & Issues)
+  - Financial shift metrics (Completed count, Labor earned, Parts reimbursed)
+- [x] Active Job Sheet (`src/app/pro/jobs/[id]/page.tsx`):
+  - Society gate-clearance protocol & Google Maps 1-tap navigation
+  - 4-stage lifecycle workflow stepper (`Assigned → On Way → Arrived → Working → Done`)
+  - Itemized hardware parts tracker with camera receipt photo upload (`ExpenseModal.tsx`)
+  - Roadblock and delay reporting engine (`IssueModal.tsx`)
+  - Doorstep UPI collection integration (`DoorstepPaymentModal.tsx`)
+

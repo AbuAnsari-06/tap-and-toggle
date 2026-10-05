@@ -17,6 +17,14 @@ export interface CustomerTrackingData {
   final_amount?: number | null;
   parts_amount?: number | null;
   handling_fee?: number | null;
+  expenses?: {
+    id: string;
+    item_name: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+    receipt_photo_url?: string | null;
+  }[];
   pro?: {
     name: string;
     phone: string;
@@ -174,6 +182,17 @@ export async function fetchCustomerTrackingAction(
     const soc = cust.society || {};
     const pro = jobData.pro || null;
 
+    let expensesList: any[] = [];
+    try {
+      const { data: dbExpenses } = await supabase
+        .from("job_expense")
+        .select("id, item_name, quantity, unit_price, total_price, receipt_photo_url")
+        .eq("job_id", jobId);
+      if (dbExpenses) expensesList = dbExpenses;
+    } catch {
+      // Ignored if table empty
+    }
+
     return {
       success: true,
       data: {
@@ -190,6 +209,7 @@ export async function fetchCustomerTrackingAction(
         final_amount: jobData.final_amount,
         parts_amount: jobData.parts_amount,
         handling_fee: jobData.handling_fee,
+        expenses: expensesList,
         pro: pro
           ? {
               name: pro.name,

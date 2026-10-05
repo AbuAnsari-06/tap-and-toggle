@@ -108,9 +108,19 @@ export default function RootLayout({
                   <Link href="/#rate-card" className="hover:underline">
                     Rate Card
                   </Link>
+                  <span>•</span>
+                  <Link href="/pro/login" className="text-brand-amber-600 hover:underline">
+                    Technician Portal
+                  </Link>
                 </div>
                 <p>© {new Date().getFullYear()} {SITE_CONFIG.name}. All rights reserved.</p>
-                <p className="text-brand-grey-400">Managed dispatch & verified bench · DPDP Act 2023 Compliant</p>
+                <div className="flex items-center gap-2 text-brand-grey-400 text-[11px]">
+                  <span>Managed dispatch &amp; verified bench</span>
+                  <span>•</span>
+                  <Link href="/admin/login" className="hover:text-brand-grey-600">
+                    Ops Login
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
