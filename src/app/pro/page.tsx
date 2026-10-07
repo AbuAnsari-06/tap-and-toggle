@@ -27,11 +27,12 @@ export default function ProDashboardPage() {
   const [isOnDuty, setIsOnDuty] = useState(true);
 
   const loadJobs = async () => {
-    setLoading(false);
+    setLoading(true);
     const res = await fetchProAssignedJobsAction();
     if (res.success && res.jobs) {
       setJobs(res.jobs);
     }
+    setLoading(false);
   };
 
   useEffect(() => {

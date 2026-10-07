@@ -98,7 +98,19 @@ export async function proLoginAction(
     const isDemo = formData.get("demo") === "true";
 
     if (isDemo) {
-      const demoPro = SEED_PROS[0];
+      let demoPro = SEED_PROS[0];
+      try {
+        const supabase = getAdminSupabaseClient();
+        const { data: foundPros } = await supabase
+          .from("pro")
+          .select("*")
+          .or(`name.ilike.%Ramesh Shinde%,phone.ilike.%9822011111%`);
+        if (foundPros && foundPros.length > 0) {
+          demoPro = foundPros[0] as Pro;
+        }
+      } catch {
+        // Fallback to seed
+      }
       await createProSession(demoPro);
       return {
         success: true,

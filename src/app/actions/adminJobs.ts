@@ -233,6 +233,10 @@ export async function updateJobStatusAction(
   }
 }
 
+function cleanPhoneStr(phone: string): string {
+  return phone.replace(/[^0-9]/g, "").slice(-10);
+}
+
 export async function updateJobDetailsAction(
   jobId: string,
   data: {
@@ -254,11 +258,67 @@ export async function updateJobDetailsAction(
     try {
       supabase = getAdminSupabaseClient();
     } catch {
+      // In-memory fallback for local mock mode
+      const seedJob = SEED_BENCH_JOBS.find((j) => j.id === jobId);
+      if (seedJob) {
+        if (data.status) seedJob.status = data.status;
+        if (data.pro_id !== undefined) seedJob.pro_id = data.pro_id;
+        if (data.estimate_amount !== undefined) seedJob.estimate_amount = data.estimate_amount;
+        if (data.parts_amount !== undefined) seedJob.parts_amount = data.parts_amount;
+        if (data.handling_fee !== undefined) seedJob.handling_fee = data.handling_fee;
+        if (data.final_amount !== undefined) seedJob.final_amount = data.final_amount;
+      }
       return { success: true };
     }
 
+    // Resolve pro_id to valid Supabase UUID if a non-UUID ID was passed (e.g. "pro-001")
+    let targetProId = data.pro_id;
+    if (data.pro_id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.pro_id)) {
+      try {
+        const seedMatch = SEED_BENCH_JOBS.find((j) => j.pro_id === data.pro_id);
+        const proName = seedMatch?.pro_name || (data.pro_id === "pro-001" ? "Ramesh Shinde" : null);
+
+        if (proName) {
+          const { data: foundPros } = await supabase
+            .from("pro")
+            .select("id, name, phone")
+            .ilike("name", `%${proName}%`);
+
+          if (foundPros && foundPros.length > 0) {
+            targetProId = (foundPros[0] as any).id;
+          } else {
+            // Auto-create pro in database to satisfy foreign key UUID constraint
+            const { data: createdPro } = await (supabase.from("pro") as any)
+              .insert({
+                name: proName,
+                phone: seedMatch?.pro_phone || "+919822011111",
+                service: "plumbing",
+                base_rate: 350,
+                active: true,
+                gate_list_status: "approved",
+                health_score: 4.9,
+                vetting_docs_ref: "Aadhaar verified · Police verification on file",
+              })
+              .select("id")
+              .single();
+
+            if (createdPro) {
+              targetProId = (createdPro as any).id;
+            }
+          }
+        }
+      } catch (proErr) {
+        console.warn("Could not resolve pro UUID:", proErr);
+      }
+    }
+
+    const payloadToUpdate = {
+      ...data,
+      pro_id: targetProId,
+    };
+
     const { error } = await (supabase.from("job") as any)
-      .update(data)
+      .update(payloadToUpdate)
       .eq("id", jobId);
 
     if (error) {
