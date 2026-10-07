@@ -17,6 +17,8 @@ import {
   FileText,
   AlertCircle,
 } from "lucide-react";
+import { SITE_CONFIG } from "@/config/site";
+import { submitSocietyPartnerAction } from "@/app/actions/submitSocietyPartner";
 
 export default function SocietyPartnerPage() {
   const [societyName, setSocietyName] = useState("");
@@ -28,22 +30,38 @@ export default function SocietyPartnerPage() {
   const [interest, setInterest] = useState("Free Weekend Repair Camp for Residents");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [generatedWaUrl, setGeneratedWaUrl] = useState<string>("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const cleanNumber = SITE_CONFIG.WHATSAPP_NUMBER.replace(/[^0-9]/g, "");
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMessage(null);
 
-    // Build WhatsApp message for direct RWA onboarding
-    const text = encodeURIComponent(
-      `Hi Tap & Toggle Operations! I am ${contactName} (${contactRole}) from ${societyName} (${units}, ${locality}). We are interested in: ${interest}. Let's discuss onboarding our building.`
-    );
-    const waUrl = `https://wa.me/918050959001?text=${text}`;
+    const formData = new FormData();
+    formData.append("society_name", societyName);
+    formData.append("area", locality);
+    formData.append("units", units);
+    formData.append("contact_name", contactName);
+    formData.append("contact_role", contactRole);
+    formData.append("phone", phone);
+    formData.append("interest", interest);
 
-    setTimeout(() => {
-      setLoading(false);
+    const res = await submitSocietyPartnerAction(null, formData);
+    setLoading(false);
+
+    if (res.success) {
       setSubmitted(true);
+      const waUrl = res.waUrl || `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
+        `Hi Tap & Toggle Community Operations! I am ${contactName} (${contactRole}) from ${societyName} (${units}, ${locality}). We are interested in: ${interest}.`
+      )}`;
+      setGeneratedWaUrl(waUrl);
       window.open(waUrl, "_blank");
-    }, 600);
+    } else {
+      setErrorMessage(res.error || "Failed to submit inquiry. Please try again or reach out on WhatsApp.");
+    }
   };
 
   return (
@@ -64,7 +82,7 @@ export default function SocietyPartnerPage() {
           </h1>
 
           <p className="mt-4 text-sm sm:text-base text-brand-teal-200/90 max-w-2xl mx-auto leading-relaxed">
-            Eliminate gate friction, protect residents with vetted &amp; insured technicians, receive welfare corpus contributions, and get free common-area repairs.
+            Eliminate gate friction, protect residents with vetted &amp; ID-cleared technicians, receive welfare corpus contributions, and get free common-area maintenance audits.
           </p>
         </div>
       </section>
@@ -137,22 +155,29 @@ export default function SocietyPartnerPage() {
             </p>
           </div>
 
+          {errorMessage && (
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
           {submitted ? (
             <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
               <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-              <h3 className="text-lg font-bold text-emerald-950">Inquiry Sent Successfully!</h3>
+              <h3 className="text-lg font-bold text-emerald-950">Inquiry Saved &amp; Dispatched!</h3>
               <p className="text-xs text-emerald-800 max-w-md mx-auto">
-                Thank you, {contactName}. We have prepared the briefing for {societyName}. If WhatsApp did not open automatically, click the button below.
+                Thank you, {contactName}. We have logged the partnership briefing for <strong>{societyName}</strong> in our operations database. If WhatsApp did not open automatically, tap below:
               </p>
               <div className="pt-2">
                 <a
-                  href="https://wa.me/918050959001?text=Hi%20Tap%20%26%20Toggle!%20We%20just%20submitted%20a%20society%20partner%20inquiry."
+                  href={generatedWaUrl || `https://wa.me/${cleanNumber}?text=Hi%20Tap%20%26%20Toggle!%20We%20just%20submitted%20a%20society%20partner%20inquiry.`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow transition inline-flex items-center gap-2"
                 >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Open WhatsApp Direct</span>
+                  <MessageSquare className="w-4 h-4 fill-white text-emerald-600" />
+                  <span>Open WhatsApp (+91 9517614940)</span>
                 </a>
               </div>
             </div>
@@ -219,12 +244,10 @@ export default function SocietyPartnerPage() {
                     onChange={(e) => setContactRole(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-brand-grey-50 border border-brand-grey-300 text-sm text-brand-grey-900 focus:outline-none focus:ring-2 focus:ring-brand-teal-600 cursor-pointer"
                   >
-                    <option value="Chairman">Chairman</option>
-                    <option value="Secretary">Secretary</option>
-                    <option value="Treasurer">Treasurer</option>
                     <option value="Managing Committee Member">Managing Committee Member</option>
-                    <option value="Facility Manager">Facility Manager</option>
-                    <option value="Resident Advocate">Concerned Resident</option>
+                    <option value="Society Secretary / Chairman">Society Secretary / Chairman</option>
+                    <option value="Estate / Facility Manager">Estate / Facility Manager</option>
+                    <option value="Active Resident / Flat Owner">Active Resident / Flat Owner</option>
                   </select>
                 </div>
               </div>
@@ -233,74 +256,68 @@ export default function SocietyPartnerPage() {
                 {/* Phone */}
                 <div>
                   <label className="block text-xs font-semibold text-brand-grey-700 mb-1.5">
-                    WhatsApp Phone Number <span className="text-rose-500">*</span>
+                    WhatsApp / Phone Number <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="tel"
                     required
-                    placeholder="98220 12345"
+                    placeholder="e.g. 98220 12345"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-brand-grey-50 border border-brand-grey-300 text-sm text-brand-grey-900 focus:outline-none focus:ring-2 focus:ring-brand-teal-600 font-mono"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-brand-grey-50 border border-brand-grey-300 text-sm text-brand-grey-900 focus:outline-none focus:ring-2 focus:ring-brand-teal-600"
                   />
                 </div>
 
-                {/* Units */}
+                {/* Number of Flats */}
                 <div>
                   <label className="block text-xs font-semibold text-brand-grey-700 mb-1.5">
-                    Number of Flats / Units
+                    Approx. Number of Units
                   </label>
                   <select
                     value={units}
                     onChange={(e) => setUnits(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-brand-grey-50 border border-brand-grey-300 text-sm text-brand-grey-900 focus:outline-none focus:ring-2 focus:ring-brand-teal-600 cursor-pointer"
                   >
+                    <option value="Under 50 flats">Under 50 flats</option>
                     <option value="50 - 150 flats">50 - 150 flats</option>
                     <option value="150 - 300 flats">150 - 300 flats</option>
                     <option value="300 - 600 flats">300 - 600 flats</option>
-                    <option value="600+ flats (Large Township)">600+ flats (Large Township)</option>
+                    <option value="600+ flats (Mega Township)">600+ flats (Mega Township)</option>
                   </select>
                 </div>
               </div>
 
-              {/* What interest you */}
+              {/* Primary Interest */}
               <div>
                 <label className="block text-xs font-semibold text-brand-grey-700 mb-1.5">
-                  How can Tap &amp; Toggle best support your society?
+                  Primary Interest / Starting Step
                 </label>
                 <select
                   value={interest}
                   onChange={(e) => setInterest(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-brand-grey-50 border border-brand-grey-300 text-sm text-brand-grey-900 focus:outline-none focus:ring-2 focus:ring-brand-teal-600 cursor-pointer"
                 >
-                  <option value="Free Weekend Repair Camp for Residents">
-                    Host a Free Weekend Repair Camp for Residents
-                  </option>
-                  <option value="Pre-Approved Gate Roster MoU">
-                    Set up Pre-Approved Gate Roster for MyGate / NoBrokerHood
-                  </option>
-                  <option value="Lift QR Posters & Resident Welfare Contribution">
-                    Supply Free Lift QR Posters &amp; Society Corpus Contribution
-                  </option>
-                  <option value="Common-Area Pump Room / Panel Audit">
-                    Schedule Free Common-Area Pump Room / Electrical Audit
-                  </option>
+                  <option value="Free Weekend Repair Camp for Residents">Free Weekend Repair Camp for Residents</option>
+                  <option value="Pre-Approved Security Gate Clearance Roster">Pre-Approved Security Gate Clearance Roster</option>
+                  <option value="Society Corpus Rebate / Contribution Program">Society Corpus Rebate / Contribution Program</option>
+                  <option value="Common-Area Water Pump & Panel Audits">Common-Area Water Pump &amp; Panel Audits</option>
+                  <option value="Formal Society Partnership MoU">Formal Society Partnership MoU</option>
                 </select>
               </div>
 
               {/* Submit Button */}
-              <div className="pt-3">
+              <div className="pt-2">
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-4 rounded-2xl bg-brand-teal-700 hover:bg-brand-teal-800 text-white font-extrabold text-sm shadow-xl shadow-brand-teal-900/20 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="w-full py-3.5 px-6 rounded-2xl bg-brand-teal-800 hover:bg-brand-teal-900 text-white font-bold text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {loading ? (
                     <span>Submitting Inquiry...</span>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      <span>Submit Society Partnership Request</span>
+                      <span>Submit Society Inquiry &amp; WhatsApp Briefing</span>
                     </>
                   )}
                 </button>

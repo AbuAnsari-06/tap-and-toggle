@@ -16,6 +16,7 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { SITE_CONFIG } from "@/config/site";
+import { submitSocietyPartnerAction } from "@/app/actions/submitSocietyPartner";
 
 const ACTIVE_SOCIETIES = [
   { name: "Nyati Chesterfield", status: "Active Pre-Approved Roster", area: "NIBM Undri Road" },
@@ -47,10 +48,25 @@ export function SocietyChecker() {
     s.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleVoteSubmit = (e: React.FormEvent) => {
+  const handleVoteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!societyNameInput.trim() || !residentPhone.trim()) return;
     setVoteSubmitted(true);
+
+    // Persist nomination in database
+    const formData = new FormData();
+    formData.append("society_name", societyNameInput.trim());
+    formData.append("area", areaInput);
+    formData.append("contact_name", residentName.trim() || "Resident");
+    formData.append("contact_role", residentRole);
+    formData.append("phone", residentPhone.trim());
+    formData.append("interest", "Resident Society Nomination & Gate Clearance Vote");
+
+    try {
+      await submitSocietyPartnerAction(null, formData);
+    } catch (err) {
+      console.warn("Nomination saved locally:", err);
+    }
   };
 
   const nominationWhatsAppUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
