@@ -164,15 +164,16 @@ export default function CustomerTrackingPage() {
   };
 
   const currentStage = ticket ? getStageIndex(ticket.status) : 1;
+  const cleanNumber = SITE_CONFIG.WHATSAPP_NUMBER.replace(/[^0-9]/g, "");
 
   // WhatsApp Support Links
-  const waSupportLink = `https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  const waSupportLink = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
     `Hi Tap & Toggle team, checking on ticket #${ticket?.id.slice(0, 8) || "NIBM"} at ${
       ticket?.society_name || "NIBM"
     } (${ticket?.flat_no || ""}).`
   )}`;
 
-  const waApproveLink = `https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
+  const waApproveLink = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
     `Hi Tap & Toggle, I approve the estimate of ₹${ticket?.estimate_amount || 0} for ticket #${ticket?.id.slice(
       0,
       8
@@ -255,7 +256,7 @@ export default function CustomerTrackingPage() {
             <h2 className="text-xl font-extrabold text-brand-grey-900">Ticket Not Found</h2>
             <p className="text-xs text-brand-grey-600 max-w-md mx-auto">{error}</p>
             <a
-              href={`https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=Hi%20Tap%20%26%20Toggle,%20I%20need%20help%20tracking%20my%20service%20ticket.`}
+              href={`https://wa.me/${cleanNumber}?text=Hi%20Tap%20%26%20Toggle,%20I%20need%20help%20tracking%20my%20service%20ticket.`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow transition"
@@ -617,7 +618,7 @@ export default function CustomerTrackingPage() {
 
                   {/* WhatsApp Payment Confirmation */}
                   <a
-                    href={`https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                    href={`https://wa.me/${cleanNumber}?text=${encodeURIComponent(
                       `Hi Tap & Toggle, I have paid the bill of ₹${
                         ticket.final_amount ||
                         (ticket.estimate_amount || 0) +
@@ -716,7 +717,7 @@ export default function CustomerTrackingPage() {
                   </button>
 
                   <a
-                    href={`https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(
+                    href={`https://wa.me/${cleanNumber}?text=${encodeURIComponent(
                       `Hi Tap & Toggle, I would like to claim my 7-day warranty for Ticket #TT-WAR-${ticket.id
                         .slice(0, 8)
                         .toUpperCase()} at ${ticket.society_name}.`

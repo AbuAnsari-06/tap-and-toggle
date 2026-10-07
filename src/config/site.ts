@@ -13,8 +13,8 @@ export const SITE_CONFIG = {
   description:
     "NIBM's own, gate-cleared plumbers & electricians. Free upfront estimate, one accountable bill, and a 7-day workmanship warranty.",
   
-  // Single config constant for WhatsApp (Placeholder as per Blueprint Section 10 & Rules)
-  WHATSAPP_NUMBER: "+919800000000",
+  // Single config constant for WhatsApp
+  WHATSAPP_NUMBER: "+919517614940",
   
   // Geographic launch focus
   serviceArea: "NIBM, Nyati, Sus & Phase 1–2, Pune",

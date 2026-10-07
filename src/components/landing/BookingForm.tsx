@@ -54,6 +54,7 @@ export function BookingForm() {
   const [serverState, setServerState] = useState<SubmitLeadState | null>(null);
   const [submittedData, setSubmittedData] = useState<{
     name: string;
+    phone: string;
     societyName: string;
     flatNo: string;
     service: "plumbing" | "electrical";
@@ -152,9 +153,15 @@ export function BookingForm() {
     formData.append("dpdp_consent", dpdpConsent ? "true" : "false");
     formData.append("photo_count", photos.length.toString());
     formData.append("photo_names", photos.map((p) => p.name).join(", "));
+    photos.forEach((p, idx) => {
+      formData.append(`photo_data_${idx}`, p.dataUrl);
+      formData.append(`photo_name_${idx}`, p.name);
+      formData.append(`photo_size_${idx}`, p.size.toString());
+    });
 
     const currentPayload = {
       name,
+      phone,
       societyName,
       flatNo,
       service,
@@ -212,57 +219,85 @@ export function BookingForm() {
           </div>
         </div>
 
-        {/* Success Confirmation Card */}
+        {/* Success Confirmation Card with 1-Tap WhatsApp Action */}
         {serverState?.success ? (
-          <div className="p-8 rounded-3xl bg-brand-teal-50/80 border-2 border-brand-teal-400 text-center space-y-5 shadow-sm animate-in fade-in zoom-in-95 duration-300">
+          <div className="p-6 sm:p-10 rounded-3xl bg-brand-teal-50/90 border-2 border-brand-teal-400 text-center space-y-6 shadow-lg animate-in fade-in zoom-in-95 duration-300">
             <div className="w-16 h-16 rounded-2xl bg-brand-teal-700 text-white flex items-center justify-center mx-auto shadow-md">
               <CheckCircle className="w-8 h-8 text-brand-teal-100" />
             </div>
-            <h3 className="text-2xl font-bold text-brand-teal-950">
-              Request Received!
-            </h3>
-            <p className="text-sm text-brand-teal-900 max-w-md mx-auto leading-relaxed">
-              {serverState.message}
-            </p>
-            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-              {serverState.jobId && (
-                <>
+            
+            <div className="space-y-2">
+              <h3 className="text-2xl sm:text-3xl font-extrabold text-brand-teal-950">
+                Service Request Received!
+              </h3>
+              <p className="text-sm text-brand-teal-900 max-w-lg mx-auto leading-relaxed">
+                {serverState.message}
+              </p>
+            </div>
+
+            {/* Form Details Summary Box */}
+            {submittedData && (
+              <div className="max-w-md mx-auto p-4 rounded-2xl bg-white/90 border border-brand-teal-200 text-left text-xs text-brand-grey-800 space-y-1.5 shadow-sm">
+                <div className="flex justify-between items-center border-b border-brand-grey-100 pb-1.5">
+                  <span className="font-bold text-brand-teal-900">
+                    {submittedData.service === "plumbing" ? "💧 Plumbing Service" : "⚡ Electrical Service"}
+                  </span>
+                  {serverState.jobId && (
+                    <span className="text-[11px] font-mono font-semibold text-brand-grey-500">
+                      #{serverState.jobId.slice(0, 8)}
+                    </span>
+                  )}
+                </div>
+                <p><span className="font-semibold text-brand-grey-600">Resident:</span> {submittedData.name} ({submittedData.phone})</p>
+                <p><span className="font-semibold text-brand-grey-600">Location:</span> {submittedData.societyName}{submittedData.flatNo ? `, Flat ${submittedData.flatNo}` : ""}</p>
+                {submittedData.description && (
+                  <p className="truncate"><span className="font-semibold text-brand-grey-600">Issue:</span> {submittedData.description}</p>
+                )}
+              </div>
+            )}
+
+            {/* 1-Tap WhatsApp and Tracker CTAs */}
+            <div className="pt-2 flex flex-col items-center justify-center gap-3">
+              {serverState.jobId && submittedData && (
+                <a
+                  href={generateCustomerConfirmationWhatsAppUrl({
+                    jobId: serverState.jobId,
+                    customerName: submittedData.name,
+                    customerPhone: submittedData.phone,
+                    societyName: submittedData.societyName,
+                    flatNo: submittedData.flatNo,
+                    service: submittedData.service,
+                    description: submittedData.description,
+                    isEmergency: submittedData.isEmergency,
+                  })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-7 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-emerald-600/30 transition-all hover:scale-[1.02] active:scale-[0.98] inline-flex items-center justify-center gap-2.5"
+                >
+                  <MessageSquare className="w-5 h-5 fill-white text-emerald-600" />
+                  <span>Send Ticket Details on WhatsApp (1-Tap)</span>
+                </a>
+              )}
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto pt-1">
+                {serverState.jobId && (
                   <Link
                     href={`/track/${serverState.jobId}`}
-                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-brand-amber-500 hover:bg-brand-amber-600 text-brand-grey-950 text-xs font-bold shadow transition-colors inline-flex items-center justify-center gap-1.5"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-amber-500 hover:bg-brand-amber-600 text-brand-grey-950 text-xs font-bold shadow transition-colors inline-flex items-center justify-center gap-1.5"
                   >
                     <span>Track Status Live</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </Link>
+                )}
 
-                  {submittedData && (
-                    <a
-                      href={generateCustomerConfirmationWhatsAppUrl({
-                        jobId: serverState.jobId,
-                        customerName: submittedData.name,
-                        societyName: submittedData.societyName,
-                        flatNo: submittedData.flatNo,
-                        service: submittedData.service,
-                        description: submittedData.description,
-                        isEmergency: submittedData.isEmergency,
-                      })}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full sm:w-auto px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow transition-colors inline-flex items-center justify-center gap-1.5"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      <span>Open WhatsApp Chat</span>
-                    </a>
-                  )}
-                </>
-              )}
-              <button
-                type="button"
-                onClick={() => setServerState(null)}
-                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-brand-teal-700 hover:bg-brand-teal-800 text-white text-xs font-bold shadow transition-colors"
-              >
-                Submit Another Request
-              </button>
+                <button
+                  type="button"
+                  onClick={() => setServerState(null)}
+                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-brand-grey-50 text-brand-grey-700 text-xs font-semibold border border-brand-grey-200 shadow-sm transition-colors"
+                >
+                  Submit Another Request
+                </button>
+              </div>
             </div>
           </div>
         ) : (

@@ -29,14 +29,17 @@ function getCleanPhone(phone: string): string {
  * 1. Resident Initiates Chat after Request Submission
  */
 export function generateCustomerConfirmationWhatsAppUrl(job: WhatsAppJobPayload): string {
-  const shortId = job.jobId.slice(0, 8);
+  const shortId = job.jobId ? job.jobId.slice(0, 8) : "NIBM";
+  const cleanNumber = SITE_CONFIG.WHATSAPP_NUMBER.replace(/[^0-9]/g, "");
   const serviceLabel = job.service === "plumbing" ? "Plumbing 💧" : "Electrical ⚡";
   const emergencyTag = job.isEmergency ? "🚨 URGENT EMERGENCY" : "Standard Visit";
+  const phoneTag = job.customerPhone ? `\n📞 *Phone:* ${job.customerPhone}` : "";
 
   const message = `Hi *Tap & Toggle* team! 👋
 I just submitted a service request on your website.
 
 🎫 *Ticket ID:* #${shortId}
+👤 *Name:* ${job.customerName}${phoneTag}
 🛠️ *Service:* ${serviceLabel}
 ⚠️ *Priority:* ${emergencyTag}
 📍 *Location:* ${job.societyName}${job.flatNo ? `, Flat ${job.flatNo}` : ""}
@@ -44,9 +47,9 @@ I just submitted a service request on your website.
 
 👉 *Live Tracker:* https://tap-and-toggle.vercel.app/track/${job.jobId}
 
-Please send me the free estimate!`;
+Please confirm and send me the free estimate!`;
 
-  return `https://wa.me/${SITE_CONFIG.WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
 }
 
 /**

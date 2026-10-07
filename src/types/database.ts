@@ -109,6 +109,15 @@ export interface JobIssue {
   resolution_note?: string | null;
 }
 
+export interface JobPhoto {
+  id: string;
+  job_id: string;
+  photo_url: string;
+  file_name?: string | null;
+  file_size?: number | null;
+  uploaded_by: "customer" | "pro" | "admin";
+  created_at: string;
+}
 
 export interface Job {
   id: string;

@@ -132,7 +132,7 @@ export default function PrivacyPage() {
           </p>
           <div className="mt-3 text-xs sm:text-sm text-brand-grey-700 space-y-1">
             <p><strong>Brand:</strong> {SITE_CONFIG.name}</p>
-            <p><strong>WhatsApp Support:</strong> {SITE_CONFIG.WHATSAPP_NUMBER} (Placeholder)</p>
+            <p><strong>WhatsApp Support:</strong> {SITE_CONFIG.WHATSAPP_NUMBER}</p>
             <p><strong>Email:</strong> privacy@tapandtoggle.in (Placeholder)</p>
             <p><strong>Service Area:</strong> {SITE_CONFIG.serviceArea}</p>
           </div>

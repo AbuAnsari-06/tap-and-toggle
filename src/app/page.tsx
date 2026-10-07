@@ -5,6 +5,10 @@ import { HowItWorks } from "@/components/landing/HowItWorks";
 import { ServicesSection } from "@/components/landing/ServicesSection";
 import { SocietyChecker } from "@/components/landing/SocietyChecker";
 import { RateCard } from "@/components/landing/RateCard";
+import { EstimateCalculator } from "@/components/landing/EstimateCalculator";
+import { SnapEstimateCTA } from "@/components/landing/SnapEstimateCTA";
+import { RecentRepairsFeed } from "@/components/landing/RecentRepairsFeed";
+import { ComparisonTable } from "@/components/landing/ComparisonTable";
 import { BookingForm } from "@/components/landing/BookingForm";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { FloatingWhatsAppCTA } from "@/components/landing/FloatingWhatsAppCTA";
@@ -24,21 +28,32 @@ export default function HomePage() {
       {/* 4. Core Services Showcase */}
       <ServicesSection />
 
-      {/* 5. Society Gate Clearance Checker */}
+      {/* 5. Society Gate Clearance Checker & Vote Form */}
       <SocietyChecker />
 
-      {/* 6. Interactive Rate Card */}
+      {/* 6. Interactive Rate Card with 1-Click WhatsApp Booking */}
       <RateCard />
 
-      {/* 7. DPDP-Compliant Lead Request Form */}
+      {/* 7. Multi-Item Upfront Cost Estimator */}
+      <EstimateCalculator />
+
+      {/* 8. Snap a Photo / Video 2-Min WhatsApp Estimate */}
+      <SnapEstimateCTA />
+
+      {/* 9. Live Hyperlocal Social Proof & Recent Society Repairs */}
+      <RecentRepairsFeed />
+
+      {/* 10. Platform vs Competitor Matrix */}
+      <ComparisonTable />
+
+      {/* 11. DPDP-Compliant Lead Request Form */}
       <BookingForm />
 
-      {/* 8. Trust FAQs & Objections Buster */}
+      {/* 12. Trust FAQs & Objections Buster */}
       <FAQSection />
 
-      {/* 9. Floating Sticky WhatsApp Quick Action */}
+      {/* 13. Floating Sticky WhatsApp Quick Action */}
       <FloatingWhatsAppCTA />
     </div>
   );
 }
-
