@@ -23,6 +23,7 @@ import {
   User,
   ChevronRight,
   ExternalLink,
+  Image as ImageIcon,
 } from "lucide-react";
 import {
   fetchProJobDetailAction,
@@ -214,14 +215,53 @@ export default function ProJobExecutionPage() {
       </div>
 
       {/* Reported Issue Description */}
-      <div className="p-5 rounded-3xl bg-brand-grey-900 border border-brand-grey-800 space-y-2">
+      <div className="p-5 rounded-3xl bg-brand-grey-900 border border-brand-grey-800 space-y-3">
         <span className="text-xs font-bold text-brand-grey-400 uppercase tracking-wider block">
           Resident Problem Description
         </span>
         <p className="text-sm text-white font-medium leading-relaxed">
           {job.description}
         </p>
-        <div className="pt-2 flex items-center gap-2 text-xs text-brand-grey-400">
+
+        {/* Customer Uploaded Fixture Photos for Pro Inspection */}
+        {job.photos && job.photos.length > 0 && (
+          <div className="pt-2 space-y-2 border-t border-brand-grey-800">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <ImageIcon className="w-3.5 h-3.5" />
+                <span>Customer Attached Photos ({job.photos.length})</span>
+              </span>
+              <span className="text-[10px] text-brand-grey-400">Tap photo to enlarge</span>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {job.photos.map((photo, idx) => (
+                <button
+                  key={photo.id || idx}
+                  type="button"
+                  onClick={() => setPreviewPhoto(photo.photo_url)}
+                  className="group relative rounded-xl overflow-hidden bg-brand-grey-950 border border-brand-grey-800 aspect-video focus:outline-none focus:ring-2 focus:ring-amber-400 cursor-pointer text-left"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo.photo_url}
+                    alt={photo.file_name || `Fixture photo ${idx + 1}`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = "none";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-70 group-hover:opacity-90 transition-opacity" />
+                  <span className="absolute bottom-1.5 left-2 right-2 text-[10px] font-bold text-white truncate">
+                    {photo.file_name || `Photo ${idx + 1}`}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-2 flex items-center gap-2 text-xs text-brand-grey-400 border-t border-brand-grey-800/60">
           <Clock className="w-3.5 h-3.5 text-amber-400" />
           <span>Requested Slot: {job.requested_slot || "ASAP / Flexible"}</span>
         </div>

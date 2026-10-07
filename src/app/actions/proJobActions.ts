@@ -11,13 +11,16 @@ import {
   JobIssueSeverity,
   Customer,
   Society,
+  JobPhoto,
 } from "@/types/database";
+import { getJobPhotos } from "@/lib/storage/jobPhotos";
 
 export interface ProJobWithDetails extends Job {
   customer?: Customer;
   society?: Society;
   expenses?: JobExpense[];
   issues?: JobIssue[];
+  photos?: JobPhoto[];
 }
 
 // Fallback seed jobs for offline / demo mode
@@ -193,22 +196,30 @@ export async function fetchProAssignedJobsAction(): Promise<{
             *,
             society:society_id (*)
           ),
-          expenses:job_expense (*)
+          expenses:job_expense (*),
+          photos:job_photo (*)
         `)
         .in("pro_id", idArray)
         .order("created_at", { ascending: false });
 
       if (!error && dbJobs) {
-        const enriched: ProJobWithDetails[] = dbJobs.map((job: any) => {
-          const cust = job.customer || undefined;
-          const soc = cust?.society || undefined;
-          return {
-            ...job,
-            customer: cust,
-            society: soc,
-            expenses: (job.expenses || []) as JobExpense[],
-          };
-        });
+        const enriched: ProJobWithDetails[] = await Promise.all(
+          dbJobs.map(async (job: any) => {
+            const cust = job.customer || undefined;
+            const soc = cust?.society || undefined;
+            let jobPhotos = (job.photos || []) as JobPhoto[];
+            if (jobPhotos.length === 0) {
+              jobPhotos = await getJobPhotos(job.id);
+            }
+            return {
+              ...job,
+              customer: cust,
+              society: soc,
+              photos: jobPhotos,
+              expenses: (job.expenses || []) as JobExpense[],
+            };
+          })
+        );
 
         // If DB has records, return them directly
         if (enriched.length > 0) {
@@ -254,7 +265,8 @@ export async function fetchProJobDetailAction(jobId: string): Promise<{
             society:society_id (*)
           ),
           expenses:job_expense (*),
-          issues:job_issue (*)
+          issues:job_issue (*),
+          photos:job_photo (*)
         `)
         .eq("id", jobId)
         .single();
@@ -263,6 +275,10 @@ export async function fetchProJobDetailAction(jobId: string): Promise<{
         const rawJob = jobData as any;
         const cust = rawJob.customer || undefined;
         const soc = cust?.society || undefined;
+        let jobPhotos = (rawJob.photos || []) as JobPhoto[];
+        if (jobPhotos.length === 0) {
+          jobPhotos = await getJobPhotos(rawJob.id);
+        }
 
         return {
           success: true,
@@ -270,6 +286,7 @@ export async function fetchProJobDetailAction(jobId: string): Promise<{
             ...rawJob,
             customer: cust,
             society: soc,
+            photos: jobPhotos,
             expenses: (rawJob.expenses || []) as JobExpense[],
             issues: (rawJob.issues || []) as JobIssue[],
           },

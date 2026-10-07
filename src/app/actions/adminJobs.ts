@@ -2,7 +2,8 @@
 
 import { getAdminSupabaseClient } from "@/lib/supabase/server";
 import { verifyAdminSession } from "@/lib/auth/adminAuth";
-import { JobStatus, ServiceType, JobExpense, JobIssue } from "@/types/database";
+import { JobStatus, ServiceType, JobExpense, JobIssue, JobPhoto } from "@/types/database";
+import { getJobPhotos } from "@/lib/storage/jobPhotos";
 
 export interface AdminJobView {
   id: string;
@@ -26,6 +27,7 @@ export interface AdminJobView {
   created_at: string;
   expenses?: JobExpense[];
   issues?: JobIssue[];
+  photos?: JobPhoto[];
 }
 
 // Fallback bench data when remote Supabase credentials are not populated
@@ -158,7 +160,8 @@ export async function fetchAdminJobsAction(): Promise<{ success: boolean; jobs: 
           phone
         ),
         expenses:job_expense (*),
-        issues:job_issue (*)
+        issues:job_issue (*),
+        photos:job_photo (*)
       `)
       .order("created_at", { ascending: false });
 
@@ -166,34 +169,42 @@ export async function fetchAdminJobsAction(): Promise<{ success: boolean; jobs: 
       return { success: true, jobs: SEED_BENCH_JOBS };
     }
 
-    const mappedJobs: AdminJobView[] = (dbJobs as any[]).map((j) => {
-      const cust = j.customer || {};
-      const soc = cust.society || {};
-      const pro = j.pro || {};
-      return {
-        id: j.id,
-        customer_id: j.customer_id,
-        customer_name: cust.name || "Resident",
-        customer_phone: cust.phone || "—",
-        society_name: soc.name || "NIBM",
-        flat_no: cust.flat_no || "—",
-        service: j.service,
-        description: j.description,
-        status: j.status,
-        is_emergency: j.is_emergency ?? false,
-        pro_id: j.pro_id,
-        pro_name: pro.name || null,
-        pro_phone: pro.phone || null,
-        estimate_amount: j.estimate_amount,
-        final_amount: j.final_amount,
-        parts_amount: j.parts_amount,
-        handling_fee: j.handling_fee,
-        requested_slot: j.requested_slot,
-        created_at: j.created_at,
-        expenses: (j.expenses || []) as JobExpense[],
-        issues: (j.issues || []) as JobIssue[],
-      };
-    });
+    const mappedJobs: AdminJobView[] = await Promise.all(
+      (dbJobs as any[]).map(async (j) => {
+        const cust = j.customer || {};
+        const soc = cust.society || {};
+        const pro = j.pro || {};
+        let jobPhotos = (j.photos || []) as JobPhoto[];
+        if (jobPhotos.length === 0) {
+          jobPhotos = await getJobPhotos(j.id);
+        }
+
+        return {
+          id: j.id,
+          customer_id: j.customer_id,
+          customer_name: cust.name || "Resident",
+          customer_phone: cust.phone || "—",
+          society_name: soc.name || "NIBM",
+          flat_no: cust.flat_no || "—",
+          service: j.service,
+          description: j.description,
+          status: j.status,
+          is_emergency: j.is_emergency ?? false,
+          pro_id: j.pro_id,
+          pro_name: pro.name || null,
+          pro_phone: pro.phone || null,
+          estimate_amount: j.estimate_amount,
+          final_amount: j.final_amount,
+          parts_amount: j.parts_amount,
+          handling_fee: j.handling_fee,
+          requested_slot: j.requested_slot,
+          created_at: j.created_at,
+          expenses: (j.expenses || []) as JobExpense[],
+          issues: (j.issues || []) as JobIssue[],
+          photos: jobPhotos,
+        };
+      })
+    );
 
     return { success: true, jobs: mappedJobs };
   } catch (err: any) {

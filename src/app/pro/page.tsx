@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   RefreshCw,
   HardHat,
+  Image as ImageIcon,
 } from "lucide-react";
 import { fetchProAssignedJobsAction, ProJobWithDetails } from "@/app/actions/proJobActions";
 import { JobStatus } from "@/types/database";
@@ -322,9 +323,18 @@ export default function ProDashboardPage() {
 
                       {/* Bottom Details */}
                       <div className="mt-3 pt-3 border-t border-brand-grey-800 flex items-center justify-between text-[11px] text-brand-grey-400">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-brand-grey-500" />
-                          <span>{job.requested_slot || "ASAP / Flexible"}</span>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-brand-grey-500" />
+                            <span>{job.requested_slot || "ASAP / Flexible"}</span>
+                          </div>
+
+                          {job.photos && job.photos.length > 0 && (
+                            <span className="px-2 py-0.5 rounded-md bg-brand-grey-800 text-teal-300 font-bold text-[10px] flex items-center gap-1">
+                              <ImageIcon className="w-3 h-3 text-teal-400" />
+                              <span>{job.photos.length} Photo{job.photos.length > 1 ? "s" : ""}</span>
+                            </span>
+                          )}
                         </div>
 
                         <div className="flex items-center gap-1 text-amber-400 font-bold group-hover:translate-x-0.5 transition-transform">

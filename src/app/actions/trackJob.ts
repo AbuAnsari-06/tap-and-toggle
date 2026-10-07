@@ -1,7 +1,8 @@
 "use server";
 
 import { getAdminSupabaseClient } from "@/lib/supabase/server";
-import { JobStatus, ServiceType } from "@/types/database";
+import { JobStatus, ServiceType, JobPhoto } from "@/types/database";
+import { getJobPhotos } from "@/lib/storage/jobPhotos";
 
 export interface CustomerTrackingData {
   id: string;
@@ -17,6 +18,7 @@ export interface CustomerTrackingData {
   final_amount?: number | null;
   parts_amount?: number | null;
   handling_fee?: number | null;
+  photos?: JobPhoto[];
   expenses?: {
     id: string;
     item_name: string;
@@ -193,6 +195,8 @@ export async function fetchCustomerTrackingAction(
       // Ignored if table empty
     }
 
+    const jobPhotos = await getJobPhotos(jobId);
+
     return {
       success: true,
       data: {
@@ -209,6 +213,7 @@ export async function fetchCustomerTrackingAction(
         final_amount: jobData.final_amount,
         parts_amount: jobData.parts_amount,
         handling_fee: jobData.handling_fee,
+        photos: jobPhotos,
         expenses: expensesList,
         pro: pro
           ? {

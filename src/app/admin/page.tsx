@@ -25,6 +25,9 @@ import {
   Check,
   QrCode,
   Receipt,
+  Image as ImageIcon,
+  Maximize2,
+  ExternalLink,
 } from "lucide-react";
 import { JobStatus, ServiceType, Pro } from "@/types/database";
 import {
@@ -73,6 +76,8 @@ export default function AdminDashboardPage() {
   const [selectedJob, setSelectedJob] = useState<AdminJobView | null>(null);
   const [paymentJob, setPaymentJob] = useState<AdminJobView | null>(null);
   const [whatsAppModalJob, setWhatsAppModalJob] = useState<AdminJobView | null>(null);
+  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
+  const [previewPhotoName, setPreviewPhotoName] = useState<string | null>(null);
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Modal editing form state
@@ -569,6 +574,13 @@ export default function AdminDashboardPage() {
                       </span>
                     )}
 
+                    {job.photos && job.photos.length > 0 ? (
+                      <span className="px-2 py-0.5 rounded-md bg-brand-teal-950/80 border border-brand-teal-700/60 text-brand-teal-300 font-bold text-[11px] flex items-center gap-1 shadow-xs">
+                        <ImageIcon className="w-3 h-3 text-brand-teal-400" />
+                        <span>{job.photos.length} Photo{job.photos.length > 1 ? "s" : ""}</span>
+                      </span>
+                    ) : null}
+
                     {job.final_amount ? (
                       <span className="text-emerald-300 font-bold flex items-center gap-0.5">
                         <DollarSign className="w-3 h-3" />
@@ -700,6 +712,69 @@ export default function AdminDashboardPage() {
                 {selectedJob.description}
               </p>
             </div>
+
+            {/* Customer Uploaded Fixture Photos */}
+            {selectedJob.photos && selectedJob.photos.length > 0 && (
+              <div className="bg-brand-grey-800/60 p-3.5 rounded-2xl border border-brand-grey-700/60 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[11px] font-bold text-brand-teal-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    <span>Customer Uploaded Photos ({selectedJob.photos.length})</span>
+                  </label>
+                  <span className="text-[10px] text-brand-grey-400">Click photo to enlarge</span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {selectedJob.photos.map((photo, idx) => (
+                    <div
+                      key={photo.id || idx}
+                      className="group relative rounded-xl overflow-hidden bg-brand-grey-900 border border-brand-grey-700/80 aspect-video flex flex-col justify-end"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.photo_url}
+                        alt={photo.file_name || `Fixture photo ${idx + 1}`}
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          // fallback if image fails to render
+                          (e.target as HTMLElement).style.display = "none";
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+
+                      <div className="relative z-10 p-2 flex items-center justify-between gap-1">
+                        <span className="text-[10px] text-brand-grey-200 font-semibold truncate max-w-[80px]">
+                          {photo.file_name || `Photo ${idx + 1}`}
+                        </span>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPreviewPhotoUrl(photo.photo_url);
+                              setPreviewPhotoName(photo.file_name || `Photo ${idx + 1}`);
+                            }}
+                            className="p-1 rounded-md bg-brand-teal-600/90 hover:bg-brand-teal-500 text-white transition shadow"
+                            title="Maximize Image"
+                          >
+                            <Maximize2 className="w-3 h-3" />
+                          </button>
+                          <a
+                            href={photo.photo_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 rounded-md bg-brand-grey-700/90 hover:bg-brand-grey-600 text-white transition shadow"
+                            title="Open in new tab"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Lifecycle State Selector */}
             <div className="space-y-1.5">
@@ -995,6 +1070,52 @@ export default function AdminDashboardPage() {
           pros={pros}
           onClose={() => setWhatsAppModalJob(null)}
         />
+      )}
+
+      {/* Customer Fixture Photo Lightbox Modal */}
+      {previewPhotoUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center bg-brand-grey-900 border border-brand-grey-750 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4">
+            <div className="w-full flex items-center justify-between pb-3 border-b border-brand-grey-800">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-brand-teal-400" />
+                <span className="text-sm font-bold text-white">
+                  {previewPhotoName || "Customer Fixture Photo"}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href={previewPhotoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-xl bg-brand-grey-800 hover:bg-brand-grey-700 text-brand-grey-200 text-xs font-semibold transition flex items-center gap-1.5"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open Full Size</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewPhotoUrl(null);
+                    setPreviewPhotoName(null);
+                  }}
+                  className="p-1.5 rounded-xl bg-brand-grey-800 hover:bg-brand-grey-700 text-brand-grey-300 hover:text-white transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 w-full overflow-hidden flex items-center justify-center rounded-2xl bg-black/50 p-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewPhotoUrl}
+                alt={previewPhotoName || "Customer photo"}
+                className="max-h-[70vh] max-w-full object-contain rounded-xl shadow-lg"
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

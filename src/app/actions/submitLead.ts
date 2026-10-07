@@ -3,6 +3,7 @@
 import { getAdminSupabaseClient } from "@/lib/supabase/server";
 import { SITE_CONFIG } from "@/config/site";
 import { ServiceType } from "@/types/database";
+import { saveJobPhotos } from "@/lib/storage/jobPhotos";
 
 export interface SubmitLeadState {
   success: boolean;
@@ -216,6 +217,33 @@ export async function submitLeadAction(
         success: false,
         error: jobError?.message || "Your contact details were saved, but creating the service ticket failed. Please message us on WhatsApp.",
       };
+    }
+
+    // 8. Step 4: Extract and Save Customer Fixture Photos
+    if (createdJobId && photoCount > 0) {
+      const photosToSave: { dataUrl: string; name?: string; size?: number; uploadedBy: "customer" }[] = [];
+      for (let i = 0; i < photoCount; i++) {
+        const dataUrl = formData.get(`photo_data_${i}`) as string;
+        const pName = formData.get(`photo_name_${i}`) as string;
+        const pSize = parseInt((formData.get(`photo_size_${i}`) as string) || "0", 10);
+        if (dataUrl && (dataUrl.startsWith("data:") || dataUrl.startsWith("http"))) {
+          photosToSave.push({
+            dataUrl,
+            name: pName || `photo_${i + 1}.jpg`,
+            size: pSize || undefined,
+            uploadedBy: "customer",
+          });
+        }
+      }
+
+      if (photosToSave.length > 0) {
+        try {
+          await saveJobPhotos(createdJobId, photosToSave);
+          console.log(`📸 Successfully saved ${photosToSave.length} photo(s) for Ticket #${createdJobId.slice(0, 8)}`);
+        } catch (photoSaveErr: any) {
+          console.warn("Notice: Non-blocking photo save error:", photoSaveErr.message);
+        }
+      }
     }
 
     console.log(`✅ Service Request logged successfully with Ticket ID: ${createdJobId}`);
