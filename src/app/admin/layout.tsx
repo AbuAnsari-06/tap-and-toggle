@@ -8,6 +8,7 @@ import {
   ClipboardList,
   Users,
   UserCheck,
+  Building,
   LogOut,
   ExternalLink,
   ShieldCheck,
@@ -98,6 +99,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       name: "Pro Bench",
       href: "/admin/pros",
       icon: UserCheck,
+      exact: false,
+    },
+    {
+      name: "Societies",
+      href: "/admin/societies",
+      icon: Building,
       exact: false,
     },
     {
